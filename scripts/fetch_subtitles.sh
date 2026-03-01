@@ -37,15 +37,16 @@ for vid in streams:
 
     subprocess.run([
         "yt-dlp",
+        "--cookies", "cookies.txt",
         "--skip-download",
         "--write-auto-subs",
-        "--sub-lang","en,ja,ko,zh-Hans,zh-Hant",
-        "--sub-format","srt/best",
-        "--convert-subs","srt",
-        "--extractor-args","youtube:player_client=android",
-        "--sleep-requests","2",
-        "--sleep-interval","2",
-        "-o",f"{folder}/%(id)s.%(ext)s",
+        "--sub-lang", "en,ja,ko,zh-Hans,zh-Hant",
+        "--sub-format", "srt/best",
+        "--convert-subs", "srt",
+        "--extractor-args", "youtube:player_client=android",
+        "--sleep-requests", "2",
+        "--sleep-interval", "2",
+        "-o", f"{folder}/%(id)s.%(ext)s",
         url
     ])
 
