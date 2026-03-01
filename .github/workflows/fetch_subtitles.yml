@@ -27,8 +27,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install yt-dlp
-        run: pip install -U yt-dlp
+      - name: Install yt-dlp nightly
+        run: pip install -U yt-dlp-nightly
 
       - name: Create subtitles folder
         run: mkdir -p subtitles
