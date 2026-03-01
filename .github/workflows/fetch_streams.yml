@@ -1,4 +1,4 @@
-name: Fetch YouTube Data
+name: Fetch YouTube Streams
 
 on:
   schedule:
@@ -17,21 +17,16 @@ jobs:
       - name: Install yt-dlp
         run: pip install yt-dlp
 
-      - name: Create data folders
-        run: |
-          mkdir -p data
-          mkdir -p data/playlists
+      - name: Ensure data folder exists
+        run: mkdir -p data
 
-      - name: Fetch stream IDs
+      - name: Run stream fetch script
         run: bash scripts/fetch_streams.sh
 
-      - name: Fetch playlist map
-        run: bash scripts/fetch_playlists.sh
-
-      - name: Commit data
+      - name: Commit updated streams.json
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          git add data
-          git commit -m "Update youtube data" || echo "No changes"
+          git add data/streams.json
+          git commit -m "Update streams list" || echo "No changes"
           git push
