@@ -47,7 +47,6 @@ for vid in streams:
         "--convert-subs", "srt",
         "--force-overwrites",
         "--ignore-errors",
-        "--print after_move:filepath",
         "--no-warnings",
         "-o", f"{sub_folder}/%(id)s.%(ext)s",
         url
@@ -62,10 +61,9 @@ for vid in streams:
         "--skip-download",
         "--write-subs",
         "--sub-langs", "live_chat",
-        "--sub-format", "json",
+        "--sub-format", "json3",
         "--force-overwrites",
         "--ignore-errors",
-        "--print after_move:filepath",
         "--no-warnings",
         "-o", f"{chat_folder}/%(id)s.live_chat.%(ext)s",
         url
