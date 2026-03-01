@@ -34,36 +34,36 @@ for vid in streams:
     os.makedirs(sub_folder, exist_ok=True)
     os.makedirs(chat_folder, exist_ok=True)
 
-    # Download subtitles
+    # SUBTITLES
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
         "--js-runtimes","node",
-        "--remote-components",
-        "--extractor-args","youtube:player_client=android",
+        "--remote-components","github",
         "--skip-download",
         "--write-subs",
         "--write-auto-subs",
         "--sub-langs","all",
         "--convert-subs","srt",
-        "--no-playlist",
+        "--force-overwrites",
         "--ignore-errors",
+        "--no-warnings",
         "-o",f"{sub_folder}/%(id)s.%(ext)s",
         url
     ])
 
-    # Download live chat replay
+    # LIVE CHAT
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
         "--js-runtimes","node",
-        "--remote-components",
-        "--extractor-args","youtube:player_client=android",
+        "--remote-components","github",
         "--skip-download",
         "--write-subs",
         "--sub-langs","live_chat",
-        "--no-playlist",
+        "--force-overwrites",
         "--ignore-errors",
+        "--no-warnings",
         "-o",f"{chat_folder}/%(id)s.%(ext)s",
         url
     ])
