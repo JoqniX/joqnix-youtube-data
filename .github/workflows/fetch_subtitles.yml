@@ -27,8 +27,18 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
       - name: Install yt-dlp nightly
         run: pip install -U yt-dlp-nightly
+
+      - name: Debug subtitle availability
+        run: |
+          yt-dlp \
+            --cookies cookies.txt \
+            --list-subs \
+            https://www.youtube.com/watch?v=$(jq -r '.[0]' data/streams.json)
 
       - name: Create subtitles folder
         run: mkdir -p subtitles
