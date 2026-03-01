@@ -37,34 +37,35 @@ for vid in streams:
     # SUBTITLES
     subprocess.run([
         "yt-dlp",
-        "--cookies","cookies.txt",
-        "--js-runtimes","node",
-        "--remote-components","github",
+        "--cookies", "cookies.txt",
+        "--js-runtimes", "node",
+        "--remote-components", "github",
         "--skip-download",
         "--write-subs",
         "--write-auto-subs",
-        "--sub-langs","all",
-        "--convert-subs","srt",
+        "--sub-langs", "all",
+        "--convert-subs", "srt",
         "--force-overwrites",
         "--ignore-errors",
         "--no-warnings",
-        "-o",f"{sub_folder}/%(id)s.%(ext)s",
+        "-o", f"{sub_folder}/%(id)s.%(ext)s",
         url
     ])
 
     # LIVE CHAT
     subprocess.run([
         "yt-dlp",
-        "--cookies","cookies.txt",
-        "--js-runtimes","node",
-        "--remote-components","github",
+        "--cookies", "cookies.txt",
+        "--js-runtimes", "node",
+        "--remote-components", "github",
         "--skip-download",
         "--write-subs",
-        "--sub-langs","live_chat",
+        "--sub-langs", "live_chat",
+        "--sub-format", "json",
         "--force-overwrites",
         "--ignore-errors",
         "--no-warnings",
-        "-o",f"{chat_folder}/%(id)s.%(ext)s",
+        "-o", f"{chat_folder}/%(id)s.live_chat.%(ext)s",
         url
     ])
 
