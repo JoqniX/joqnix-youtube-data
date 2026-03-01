@@ -43,13 +43,16 @@ jobs:
       - name: Create subtitles folder
         run: mkdir -p subtitles
 
+      - name: Create livechat folder
+        run: mkdir -p livechat
+
       - name: Run subtitle script
         run: bash scripts/fetch_subtitles.sh
 
-      - name: Commit subtitles
+      - name: Commit subtitles and livechat
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          git add subtitles
-          git commit -m "Add subtitles" || echo "No changes"
+          git add subtitles livechat
+          git commit -m "Update subtitles and livechat" || echo "No changes"
           git push
