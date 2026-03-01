@@ -37,29 +37,30 @@ for vid in streams:
     # Download subtitles
     subprocess.run([
         "yt-dlp",
-        "--cookies", "cookies.txt",
+        "--cookies","cookies.txt",
+        "--js-runtimes","node",
         "--skip-download",
         "--write-subs",
         "--write-auto-subs",
-        "--sub-langs", "all",
-        "--sub-format", "srt",
-        "--convert-subs", "srt",
+        "--sub-langs","all",
+        "--convert-subs","srt",
         "--no-playlist",
         "--ignore-errors",
-        "-o", f"{sub_folder}/%(id)s.%(ext)s",
+        "-o",f"{sub_folder}/%(id)s.%(ext)s",
         url
     ])
 
     # Download live chat replay
     subprocess.run([
         "yt-dlp",
-        "--cookies", "cookies.txt",
+        "--cookies","cookies.txt",
+        "--js-runtimes","node",
         "--skip-download",
         "--write-subs",
-        "--sub-langs", "live_chat",
+        "--sub-langs","live_chat",
         "--no-playlist",
         "--ignore-errors",
-        "-o", f"{chat_folder}/%(id)s.%(ext)s",
+        "-o",f"{chat_folder}/%(id)s.%(ext)s",
         url
     ])
 
