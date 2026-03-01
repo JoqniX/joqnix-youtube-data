@@ -34,37 +34,39 @@ for vid in streams:
     os.makedirs(sub_folder, exist_ok=True)
     os.makedirs(chat_folder, exist_ok=True)
 
-# Download subtitles
-subprocess.run([
-    "yt-dlp",
-    "--cookies","cookies.txt",
-    "--js-runtimes","node",
-    "--remote-components",
-    "--skip-download",
-    "--write-subs",
-    "--write-auto-subs",
-    "--sub-langs","all",
-    "--convert-subs","srt",
-    "--no-playlist",
-    "--ignore-errors",
-    "-o",f"{sub_folder}/%(id)s.%(ext)s",
-    url
-])
+    # Download subtitles
+    subprocess.run([
+        "yt-dlp",
+        "--cookies","cookies.txt",
+        "--js-runtimes","node",
+        "--remote-components",
+        "--extractor-args","youtube:player_client=android",
+        "--skip-download",
+        "--write-subs",
+        "--write-auto-subs",
+        "--sub-langs","all",
+        "--convert-subs","srt",
+        "--no-playlist",
+        "--ignore-errors",
+        "-o",f"{sub_folder}/%(id)s.%(ext)s",
+        url
+    ])
 
-# Download live chat replay
-subprocess.run([
-    "yt-dlp",
-    "--cookies","cookies.txt",
-    "--js-runtimes","node",
-    "--remote-components",
-    "--skip-download",
-    "--write-subs",
-    "--sub-langs","live_chat",
-    "--no-playlist",
-    "--ignore-errors",
-    "-o",f"{chat_folder}/%(id)s.%(ext)s",
-    url
-])
+    # Download live chat replay
+    subprocess.run([
+        "yt-dlp",
+        "--cookies","cookies.txt",
+        "--js-runtimes","node",
+        "--remote-components",
+        "--extractor-args","youtube:player_client=android",
+        "--skip-download",
+        "--write-subs",
+        "--sub-langs","live_chat",
+        "--no-playlist",
+        "--ignore-errors",
+        "-o",f"{chat_folder}/%(id)s.%(ext)s",
+        url
+    ])
 
     processed += 1
     time.sleep(2)
