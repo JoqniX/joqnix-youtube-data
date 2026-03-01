@@ -1,0 +1,31 @@
+name: Fetch YouTube Playlists
+
+on:
+  schedule:
+    - cron: '0 0 * * 2'
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install yt-dlp
+        run: pip install yt-dlp
+
+      - name: Ensure data folder
+        run: mkdir -p data
+
+      - name: Run playlist script
+        run: bash scripts/fetch_playlists.sh
+
+      - name: Commit playlist data
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add data/playlist_map.json
+          git commit -m "Update playlist map" || echo "No changes"
+          git push
