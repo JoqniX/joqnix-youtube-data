@@ -10,12 +10,12 @@ python3 << 'EOF'
 import json
 import os
 import subprocess
+import time
 
-# Load video IDs
 with open("data/streams.json") as f:
     streams = json.load(f)
 
-limit = 10
+limit = 5
 processed = 0
 
 for vid in streams:
@@ -25,7 +25,6 @@ for vid in streams:
 
     folder = f"subtitles/{vid}"
 
-    # Skip videos already archived
     if os.path.exists(folder):
         print("Skipping existing:", vid)
         continue
@@ -40,14 +39,18 @@ for vid in streams:
         "yt-dlp",
         "--skip-download",
         "--write-auto-subs",
-        "--sub-lang", "en,ja,ko,zh-Hans,zh-Hant",
-        "--sub-format", "srt/best",
-        "--convert-subs", "srt",
-        "-o", f"{folder}/%(id)s.%(ext)s",
+        "--sub-lang","en,ja,ko,zh-Hans,zh-Hant",
+        "--sub-format","srt/best",
+        "--convert-subs","srt",
+        "--extractor-args","youtube:player_client=android",
+        "--sleep-requests","2",
+        "--sleep-interval","2",
+        "-o",f"{folder}/%(id)s.%(ext)s",
         url
     ])
 
     processed += 1
+    time.sleep(2)
 
 print("Processed", processed, "videos")
 EOF
