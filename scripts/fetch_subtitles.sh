@@ -43,7 +43,7 @@ for vid in streams:
         "--skip-download",
         "--write-subs",
         "--write-auto-subs",
-        "--sub-langs", "all",-live_chat",
+        "--sub-langs", "all,-live_chat",
         "--convert-subs", "srt",
         "--force-overwrites",
         "--ignore-errors",
