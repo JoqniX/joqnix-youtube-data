@@ -45,7 +45,7 @@ def compress_transcript(data):
         lines.append(f"{timestamp} {text}")
 
     return "\n".join(lines)
-    
+
 
 def fetch_transcript_local(video_id):
 
@@ -97,10 +97,14 @@ def call_ai(prompt):
     payload = {
         "model": MODEL,
         "messages": [
-            {"role": "system", "content": "You analyze livestream transcripts."},
+            {
+                "role": "system",
+                "content": "You analyze livestream transcripts and ALWAYS respond with valid JSON only."
+            },
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.3
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"}
     }
 
     r = requests.post(URL, headers=HEADERS, json=payload)
@@ -131,34 +135,43 @@ def process_video(video_id):
 
     compressed = compress_transcript(transcript)
 
+    # limit transcript size to avoid token overflow
+    compressed = compressed[:12000]
+
     prompt = f"""
 Analyze this livestream transcript.
 
-Generate JSON with:
+Return ONLY JSON in this format:
 
-summary: short stream summary
-
-chapters: list of chapters
+{{
+ "summary": "short stream summary",
+ "chapters": [
+   {{"time": "MM:SS", "title": "chapter title"}}
+ ]
+}}
 
 Rules:
-- chapters spaced 3-10 minutes
-- titles short
-- output JSON only
+- Chapters every 3–10 minutes
+- Titles must be short
+- Do NOT include explanations
+- JSON only
 
 Transcript:
 {compressed}
 """
 
-    response = call_ai(prompt)
-
     try:
+
+        response = call_ai(prompt)
 
         result = json.loads(response)
 
-    except:
+    except Exception as e:
 
-        print("AI returned invalid JSON")
-        print(response)
+        print("AI request failed:")
+        print(e)
+        print("AI response:")
+        print(response if 'response' in locals() else "No response")
         return
 
     with open(summary_path, "w", encoding="utf-8") as f:
