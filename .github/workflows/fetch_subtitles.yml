@@ -35,7 +35,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install yt-dlp
-        run: pip install -U yt-dlp
+        run: pip install -U "yt-dlp[default,curl-cffi]"
 
       - name: Debug subtitle availability
         run: |
