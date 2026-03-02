@@ -104,7 +104,7 @@ def call_ai(prompt):
             }
         ],
         "temperature": 0.4,
-        "max_tokens": 1200
+        "max_tokens": 2000
     }
 
     r = requests.post(URL, headers=HEADERS, json=payload)
@@ -185,7 +185,14 @@ Transcript:
 
         response = call_ai(prompt)
 
-        result = json.loads(response)
+        response = response.strip()
+
+if response.startswith("```"):
+    response = response.split("```")[1]
+
+response = response.strip()
+
+result = json.loads(response)
 
     except Exception as e:
 
