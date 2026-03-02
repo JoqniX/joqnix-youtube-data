@@ -158,7 +158,7 @@ def build_timeline(video_id):
 
     print("Building timelines for:", video_id)
 
-    chat_file = f"livechat/{video_id}/{video_id}.chat_simple.json"
+    chat_file = f"livechat/{video_id}/chat_simple.json"
 
     chats = []
 
@@ -296,19 +296,21 @@ for vid in streams:
 
 
     # ---------- LIVECHAT ----------
-    subprocess.run([
-        "yt-dlp",
-        "--cookies","cookies.txt",
-        "--js-runtimes","node",
-        "--remote-components","ejs:github",
-        "--skip-download",
-        "--write-subs",
-        "--sub-langs","live_chat",
-        "--sub-format","json",
-        "--no-overwrites",
-        "-o",f"{chat_folder}/%(id)s.live_chat.%(ext)s",
-        url
-    ])
+    if not os.path.exists(raw):
+
+        subprocess.run([
+            "yt-dlp",
+            "--cookies","cookies.txt",
+            "--js-runtimes","node",
+            "--remote-components","ejs:github",
+            "--skip-download",
+            "--write-subs",
+            "--sub-langs","live_chat",
+            "--sub-format","json",
+            "--no-overwrites",
+            "-o",f"{chat_folder}/%(id)s.live_chat.%(ext)s",
+            url
+        ])
 
 
     # ---------- BUILD TRANSCRIPTS ----------
