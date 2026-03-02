@@ -156,7 +156,7 @@ def build_timeline(video_id):
 
     print("Building timelines for:",video_id)
 
-    chat_file=f"livechat/{video_id}/{video_id}.chat_simple.json"
+    chat_file=f"livechat/{video_id}/chat_simple.json"
 
     chats=[]
     if os.path.exists(chat_file):
@@ -306,8 +306,8 @@ for vid in streams:
     raw=f"{chat_folder}/{vid}.live_chat.json"
     simp=f"{chat_folder}/{vid}.chat_simple.json"
 
-    if os.path.exists(raw):
-        simplify_livechat(raw,simp)
+    if os.path.exists(raw) and not os.path.exists(simp):
+    simplify_livechat(raw,simp)
 
     build_timeline(vid)
 
