@@ -251,7 +251,7 @@ for vid in streams:
         "yt-dlp",
         "--cookies","cookies.txt",
         "--js-runtimes","node",
-        "--remote-components","github",
+        "--remote-components","ejs:github",
         "--write-subs",
         "--write-auto-subs",
         "--sub-langs","en,en-orig,ja,zh-Hans,zh-Hant",
