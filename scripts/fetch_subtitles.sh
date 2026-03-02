@@ -23,12 +23,17 @@ limit = 10
 processed = 0
 
 
+# ---------- TIMESTAMP FORMAT ----------
 def seconds_to_timestamp(sec):
-    m = int(sec // 60)
+
+    h = int(sec // 3600)
+    m = int((sec % 3600) // 60)
     s = int(sec % 60)
-    return f"{m:02}:{s:02}"
+
+    return f"{h:02}:{m:02}:{s:02}"
 
 
+# ---------- SRT → HOLODEX TRANSCRIPT ----------
 def srt_to_holodex(video_id, srt_path, json_path):
 
     with open(srt_path,"r",encoding="utf-8") as f:
@@ -38,6 +43,7 @@ def srt_to_holodex(video_id, srt_path, json_path):
 
     segments=[]
     simplified=[]
+    last_text=""
 
     for block in blocks:
 
@@ -57,6 +63,16 @@ def srt_to_holodex(video_id, srt_path, json_path):
 
         start=parse(start)
         end=parse(end)
+
+        # ----- DUPLICATE CLEANING -----
+
+        if last_text and text.startswith(last_text):
+            continue
+
+        if last_text and last_text.endswith(text):
+            continue
+
+        last_text=text
 
         segments.append({
             "start":start,
@@ -78,6 +94,7 @@ def srt_to_holodex(video_id, srt_path, json_path):
         json.dump(data,f,ensure_ascii=False)
 
 
+# ---------- MAIN LOOP ----------
 for vid in streams:
 
     if processed >= limit:
@@ -114,7 +131,7 @@ for vid in streams:
 
     print("Downloading:", vid)
 
-    # SUBTITLES
+    # ---------- SUBTITLES ----------
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
@@ -134,7 +151,7 @@ for vid in streams:
         url
     ])
 
-    # LIVE CHAT
+    # ---------- LIVE CHAT ----------
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
@@ -152,7 +169,7 @@ for vid in streams:
         url
     ])
 
-    # ---- CONVERT SRT → HOLODEX JSON ----
+    # ---------- SRT → TRANSCRIPT JSON ----------
     for lang in langs:
 
         srt_file=f"{sub_folder}/{vid}.{lang}.srt"
@@ -172,6 +189,7 @@ for vid in streams:
     time.sleep(2)
 
 
+# ---------- BUILD TRANSCRIPT INDEX ----------
 print("Building transcript index...")
 
 index={}
@@ -180,17 +198,21 @@ for root,dirs,files in os.walk("subtitles"):
 
     for file in files:
 
-        if file.endswith(".en.json"):
+        if file.endswith(".json"):
 
-            vid=file.split(".")[0]
-            index[vid]=os.path.join(root,file)
+            parts=file.split(".")
+            vid=parts[0]
+            lang=parts[1]
 
+            if vid not in index:
+                index[vid]={}
+
+            index[vid][lang]=os.path.join(root,file)
 
 with open("livechat/transcript_index.json","w",encoding="utf-8") as f:
 
     json.dump(index,f,ensure_ascii=False,indent=2)
 
-
-print("Processed", processed, "videos")
+print("Done.")
 
 EOF
