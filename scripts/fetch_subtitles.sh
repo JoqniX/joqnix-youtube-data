@@ -50,7 +50,7 @@ for vid in streams:
         "--ignore-no-formats-error",
 
         "--convert-subs","srt",
-        "--keep-subs",
+        "--k",
 
         "--ignore-errors",
         "--no-warnings",
