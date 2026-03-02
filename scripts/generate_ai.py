@@ -18,13 +18,11 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-MODEL = "llama3-70b-8192"
+MODEL = "llama-3.3-70b-versatile"
 
 
 def compress_transcript(data):
-    """Reduce transcript size to avoid token limits"""
 
-    # support both formats
     if isinstance(data, dict) and "segments" in data:
         segments = data["segments"]
     else:
@@ -87,9 +85,7 @@ def get_transcript(video_id):
     if transcript:
         return transcript
 
-    transcript = fetch_transcript_github(video_id)
-
-    return transcript
+    return fetch_transcript_github(video_id)
 
 
 def call_ai(prompt):
@@ -99,16 +95,23 @@ def call_ai(prompt):
         "messages": [
             {
                 "role": "system",
-                "content": "You analyze livestream transcripts and ALWAYS respond with valid JSON only."
+                "content": "You analyze livestream transcripts and return JSON only."
             },
-            {"role": "user", "content": prompt}
+            {
+                "role": "user",
+                "content": prompt
+            }
         ],
-        "temperature": 0.2,
-        "response_format": {"type": "json_object"}
+        "temperature": 0.3,
+        "max_tokens": 1000
     }
 
     r = requests.post(URL, headers=HEADERS, json=payload)
-    r.raise_for_status()
+
+    if r.status_code != 200:
+        print("Groq API Error:")
+        print(r.text)
+        r.raise_for_status()
 
     data = r.json()
 
@@ -135,13 +138,12 @@ def process_video(video_id):
 
     compressed = compress_transcript(transcript)
 
-    # limit transcript size to avoid token overflow
     compressed = compressed[:12000]
 
     prompt = f"""
 Analyze this livestream transcript.
 
-Return ONLY JSON in this format:
+Return JSON only in this format:
 
 {{
  "summary": "short stream summary",
@@ -151,9 +153,9 @@ Return ONLY JSON in this format:
 }}
 
 Rules:
-- Chapters every 3–10 minutes
-- Titles must be short
-- Do NOT include explanations
+- chapters every 3–10 minutes
+- titles short
+- no explanations
 - JSON only
 
 Transcript:
@@ -168,10 +170,10 @@ Transcript:
 
     except Exception as e:
 
-        print("AI request failed:")
+        print("AI parsing failed:")
         print(e)
         print("AI response:")
-        print(response if 'response' in locals() else "No response")
+        print(response if 'response' in locals() else "None")
         return
 
     with open(summary_path, "w", encoding="utf-8") as f:
