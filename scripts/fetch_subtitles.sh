@@ -40,6 +40,7 @@ for vid in streams:
         "--js-runtimes","node",
         "--remote-components","github",
         "--skip-download",
+        "--format","none",
 
         "--write-subs",
         "--write-auto-subs",
