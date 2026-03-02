@@ -1,6 +1,9 @@
 name: Generate AI Metadata
 
 on:
+  schedule:
+    - cron: "0 */6 * * *"
+    
   workflow_dispatch:
   push:
     paths:
