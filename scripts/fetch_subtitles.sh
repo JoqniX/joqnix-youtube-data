@@ -37,12 +37,10 @@ for vid in streams:
         "--remote-components","github",
 
         "--skip-download",
-        "--format","none",
 
         "--write-auto-subs",
         "--sub-langs","en",
-
-        "--convert-subs","srt",
+        "--sub-format","srt",
 
         "--ignore-errors",
         "--no-warnings",
