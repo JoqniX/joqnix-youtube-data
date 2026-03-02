@@ -49,6 +49,7 @@ for vid in streams:
         "--skip-download",
         "--ignore-no-formats-error",
 
+        "--sub-format","best",
         "--convert-subs","srt",
 
         "--ignore-errors",
