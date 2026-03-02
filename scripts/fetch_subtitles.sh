@@ -67,7 +67,6 @@ def srt_to_holodex(video_id, srt_path, json_path):
         start = parse(start)
         end = parse(end)
 
-        # remove duplicate auto captions
         if last_text and text.startswith(last_text):
             continue
 
@@ -223,7 +222,6 @@ def build_timeline(video_id):
         build_timeline_chunks(video_id,lang,events)
 
 
-
 # ---------- BUILD CHUNKS ----------
 def build_timeline_chunks(video_id,lang,events):
 
@@ -254,7 +252,6 @@ def build_timeline_chunks(video_id,lang,events):
     print("Chunks created:", len(chunks))
 
 
-
 # ---------- MAIN LOOP ----------
 for vid in streams:
 
@@ -270,6 +267,9 @@ for vid in streams:
     os.makedirs(chat_folder,exist_ok=True)
 
     url = f"https://www.youtube.com/watch?v={vid}"
+
+    raw = f"{chat_folder}/{vid}.live_chat.json"
+    simp = f"{chat_folder}/{vid}.chat_simple.json"
 
 
     # ---------- SKIP IF SUBTITLES EXIST ----------
@@ -295,7 +295,7 @@ for vid in streams:
         ])
 
 
-    # ---------- LIVECHAT ----------
+    # ---------- DOWNLOAD LIVECHAT ----------
     if not os.path.exists(raw):
 
         subprocess.run([
@@ -324,9 +324,6 @@ for vid in streams:
 
 
     # ---------- CHAT SIMPLIFY ----------
-    raw = f"{chat_folder}/{vid}.live_chat.json"
-    simp = f"{chat_folder}/{vid}.chat_simple.json"
-
     if os.path.exists(raw) and not os.path.exists(simp):
 
         print("Simplifying chat:", vid)
