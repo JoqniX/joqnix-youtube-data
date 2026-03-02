@@ -18,7 +18,7 @@ langs = ["en","en-orig","ja","zh-Hans","zh-Hant"]
 with open("data/streams.json") as f:
     streams = json.load(f)
 
-limit = 10
+limit = 50
 processed = 0
 
 for vid in streams:
