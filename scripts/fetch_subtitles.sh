@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "======================================"
-echo "YouTube Subtitle + Chat Archiver"
+echo "YouTube Subtitle Archiver (EN TEST)"
 echo "======================================"
 
 mkdir -p subtitles
@@ -26,10 +26,6 @@ for vid in streams:
     folder = f"subtitles/{vid}"
     url = f"https://www.youtube.com/watch?v={vid}"
 
-    if os.path.exists(folder) and len(os.listdir(folder)) > 0:
-        print("Skipping existing:", vid)
-        continue
-
     print("Processing:", vid)
 
     os.makedirs(folder, exist_ok=True)
@@ -39,13 +35,14 @@ for vid in streams:
         "--cookies","cookies.txt",
         "--js-runtimes","node",
         "--remote-components","github",
+
         "--skip-download",
         "--format","none",
 
-        "--write-subs",
         "--write-auto-subs",
+        "--sub-langs","en",
 
-        "--sub-langs","all,live_chat",
+        "--convert-subs","srt",
 
         "--ignore-errors",
         "--no-warnings",
