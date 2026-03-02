@@ -49,8 +49,10 @@ for vid in streams:
         "--skip-download",
         "--ignore-no-formats-error",
 
+        "-k",
         "--convert-subs","srt",
-        "--k",
+        "--no-overwrites",
+        
 
         "--ignore-errors",
         "--no-warnings",
@@ -72,6 +74,7 @@ for vid in streams:
         "--sub-format","json",
 
         "--ignore-no-formats-error",
+        "--no-overwrites",
 
         "--ignore-errors",
         "--no-warnings",
