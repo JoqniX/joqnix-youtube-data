@@ -13,10 +13,12 @@ import os
 import subprocess
 import time
 
+langs = ["en","en-orig","ja","zh-Hans","zh-Hant"]
+
 with open("data/streams.json") as f:
     streams = json.load(f)
 
-limit = 3
+limit = 10
 processed = 0
 
 for vid in streams:
@@ -29,10 +31,31 @@ for vid in streams:
 
     url = f"https://www.youtube.com/watch?v={vid}"
 
-    print("Processing:", vid)
-
     os.makedirs(sub_folder, exist_ok=True)
     os.makedirs(chat_folder, exist_ok=True)
+
+    print("Checking:", vid)
+
+    # ---- CHECK SUBTITLES ----
+    subtitles_complete = True
+
+    for lang in langs:
+        vtt = f"{sub_folder}/{vid}.{lang}.vtt"
+        srt = f"{sub_folder}/{vid}.{lang}.srt"
+
+        if not (os.path.exists(vtt) and os.path.exists(srt)):
+            subtitles_complete = False
+            break
+
+    # ---- CHECK LIVECHAT ----
+    chat_file = f"{chat_folder}/{vid}.live_chat.json"
+    chat_complete = os.path.exists(chat_file)
+
+    if subtitles_complete and chat_complete:
+        print("Skipping (already archived):", vid)
+        continue
+
+    print("Downloading:", vid)
 
     # SUBTITLES
     subprocess.run([
@@ -51,8 +74,6 @@ for vid in streams:
 
         "-k",
         "--convert-subs","srt",
-        "--no-overwrites",
-        
 
         "--ignore-errors",
         "--no-warnings",
@@ -74,7 +95,6 @@ for vid in streams:
         "--sub-format","json",
 
         "--ignore-no-formats-error",
-        "--no-overwrites",
 
         "--ignore-errors",
         "--no-warnings",
