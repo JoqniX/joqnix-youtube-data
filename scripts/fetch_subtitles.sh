@@ -151,18 +151,37 @@ def simplify_livechat(input_file,output_file):
         json.dump(messages,f,ensure_ascii=False)
 
 
-# ---------- BUILD TIMELINE ----------
+# ---------- BUILD TIMELINE PER LANGUAGE ----------
 def build_timeline(video_id):
 
-    sub_file=f"subtitles/{video_id}/{video_id}.en.json"
-    chat_file=f"livechat/{video_id}/chat_simple.json"
+    print("Building timelines for:",video_id)
 
-    events=[]
+    chat_file=f"livechat/{video_id}/{video_id}.chat_simple.json"
 
-    if os.path.exists(sub_file):
+    chats=[]
+    if os.path.exists(chat_file):
+
+        with open(chat_file,"r",encoding="utf-8") as f:
+            chats=json.load(f)
+
+        print("Loaded chat messages:",len(chats))
+
+    else:
+        print("No chat found")
+
+    for lang in langs:
+
+        sub_file=f"subtitles/{video_id}/{video_id}.{lang}.json"
+
+        if not os.path.exists(sub_file):
+            continue
+
+        print("Building timeline:",lang)
 
         with open(sub_file,"r",encoding="utf-8") as f:
             subs=json.load(f)
+
+        events=[]
 
         for seg in subs["segments"]:
             events.append({
@@ -171,11 +190,6 @@ def build_timeline(video_id):
                 "timestamp":seconds_to_timestamp(seg["start"]),
                 "text":seg["text"]
             })
-
-    if os.path.exists(chat_file):
-
-        with open(chat_file,"r",encoding="utf-8") as f:
-            chats=json.load(f)
 
         for msg in chats:
             events.append({
@@ -187,28 +201,31 @@ def build_timeline(video_id):
                 "message":msg["message"]
             })
 
-    events.sort(key=lambda x:x["time"])
+        events.sort(key=lambda x:x["time"])
 
-    out=f"timeline/{video_id}.timeline.json"
+        os.makedirs(f"timeline/{video_id}",exist_ok=True)
 
-    with open(out,"w",encoding="utf-8") as f:
-        json.dump({"video_id":video_id,"events":events},f,ensure_ascii=False)
+        out=f"timeline/{video_id}/timeline_{lang}.json"
+
+        with open(out,"w",encoding="utf-8") as f:
+            json.dump({
+                "video_id":video_id,
+                "lang":lang,
+                "events":events
+            },f,ensure_ascii=False)
+
+        print("Events:",len(events))
+
+        build_timeline_chunks(video_id,lang,events)
 
 
-# ---------- BUILD TIMELINE CHUNKS ----------
-def build_timeline_chunks(video_id):
+# ---------- BUILD CHUNKS ----------
+def build_timeline_chunks(video_id,lang,events):
 
-    timeline_file=f"timeline/{video_id}.timeline.json"
+    print("Chunking timeline:",video_id,lang)
 
-    if not os.path.exists(timeline_file):
-        return
+    chunk_dir=f"timeline_chunks/{video_id}/{lang}"
 
-    with open(timeline_file,"r",encoding="utf-8") as f:
-        data=json.load(f)
-
-    events=data["events"]
-
-    chunk_dir=f"timeline_chunks/{video_id}"
     os.makedirs(chunk_dir,exist_ok=True)
 
     chunks={}
@@ -229,6 +246,8 @@ def build_timeline_chunks(video_id):
         with open(path,"w",encoding="utf-8") as f:
             json.dump(chunks[minute],f,ensure_ascii=False)
 
+    print("Chunks created:",len(chunks))
+
 
 # ---------- MAIN LOOP ----------
 for vid in streams:
@@ -246,7 +265,6 @@ for vid in streams:
 
     url=f"https://www.youtube.com/watch?v={vid}"
 
-    # SUBTITLES
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
@@ -263,12 +281,11 @@ for vid in streams:
         url
     ])
 
-    # LIVECHAT
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
         "--js-runtimes","node",
-        "--remote-components","github",
+        "--remote-components","ejs:github",
         "--skip-download",
         "--write-subs",
         "--sub-langs","live_chat",
@@ -278,7 +295,6 @@ for vid in streams:
         url
     ])
 
-    # TRANSCRIPTS
     for lang in langs:
 
         srt=f"{sub_folder}/{vid}.{lang}.srt"
@@ -287,16 +303,13 @@ for vid in streams:
         if os.path.exists(srt):
             srt_to_holodex(vid,srt,js)
 
-    # CHAT SIMPLIFY
     raw=f"{chat_folder}/{vid}.live_chat.json"
     simp=f"{chat_folder}/{vid}.chat_simple.json"
 
     if os.path.exists(raw):
         simplify_livechat(raw,simp)
 
-    # TIMELINE
     build_timeline(vid)
-    build_timeline_chunks(vid)
 
     processed+=1
     time.sleep(2)
