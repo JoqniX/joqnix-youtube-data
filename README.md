@@ -46,7 +46,7 @@ Example:
   "3V5iJmjMdwU"
 ]
 
-
+```
 ---
 
 2️⃣ Playlist Mapping
@@ -68,6 +68,7 @@ data/playlist_map.json
 
 Example structure:
 
+```
 {
   "playlist_id": {
     "title": "Gaming Streams",
@@ -77,6 +78,7 @@ Example structure:
     ]
   }
 }
+```
 
 This data is also pushed to a Cloudflare Worker API used by the website backend.
 
@@ -113,6 +115,7 @@ For each stream listed in streams.json, the workflow:
 
 Repository Structure
 
+```
 data/
   streams.json
   playlist_map.json
@@ -146,7 +149,7 @@ timeline_chunks/
 
 scripts/
   fetch_subtitles.sh
-
+```
 
 ---
 
@@ -170,6 +173,7 @@ Each subtitle track is stored in three formats:
 
 Example transcript JSON:
 
+```
 {
   "video_id": "RX5QhGQpW94",
   "segments": [
@@ -183,6 +187,7 @@ Example transcript JSON:
     "00:00:12 Hello everyone"
   ]
 }
+```
 
 This format is inspired by the Holodex transcript structure.
 
@@ -205,6 +210,7 @@ VIDEO_ID.chat_simple.json
 
 Example simplified message:
 
+```
 {
   "time": 183.8,
   "timestamp": "00:03:03",
@@ -212,6 +218,7 @@ Example simplified message:
   "avatar": "https://yt4.ggpht.com/.../s64...",
   "message": "Hi It's Me Franco 👋 🙂"
 }
+```
 
 This simplified structure is optimized for rendering chat in the website UI.
 
@@ -224,15 +231,17 @@ The timeline merges subtitles and chat messages into a single chronological even
 
 Example subtitle event:
 
+```
 {
   "type": "subtitle",
   "time": 412.5,
   "timestamp": "00:06:52",
   "text": "Let's start the game"
 }
-
+```
 Example chat event:
 
+```
 {
   "type": "chat",
   "time": 414.2,
@@ -241,6 +250,7 @@ Example chat event:
   "avatar": "avatar_url",
   "message": "Good luck!"
 }
+```
 
 This allows subtitles and chat to be synchronized with the video playback timeline.
 
@@ -255,12 +265,14 @@ To prevent slow loading, timelines are split into 1-minute chunks.
 
 Example:
 
+```
 timeline_chunks/
   VIDEO_ID/
     en/
       chunk_0.json
       chunk_1.json
       chunk_2.json
+```
 
 The website loads chunks dynamically while the user scrolls through the timeline.
 
