@@ -1,11 +1,44 @@
 {
-  "RX5QhGQpW94": "subtitles/RX5QhGQpW94/RX5QhGQpW94.en.json",
-  "eB69vFlRJ8U": "subtitles/eB69vFlRJ8U/eB69vFlRJ8U.en.json",
-  "xXv3rIX3Unk": "subtitles/xXv3rIX3Unk/xXv3rIX3Unk.en.json",
-  "3V5iJmjMdwU": "subtitles/3V5iJmjMdwU/3V5iJmjMdwU.en.json",
-  "bHI_vY2rJQw": "subtitles/bHI_vY2rJQw/bHI_vY2rJQw.en.json",
-  "cEl2DELBY1A": "subtitles/cEl2DELBY1A/cEl2DELBY1A.en.json",
-  "YauEy4CBEVY": "subtitles/YauEy4CBEVY/YauEy4CBEVY.en.json",
-  "Q1fYownseYo": "subtitles/Q1fYownseYo/Q1fYownseYo.en.json",
-  "xQGhrPk9mZI": "subtitles/xQGhrPk9mZI/xQGhrPk9mZI.en.json"
+  "RX5QhGQpW94": {
+    "en": "subtitles/RX5QhGQpW94/RX5QhGQpW94.en.json",
+    "ja": "subtitles/RX5QhGQpW94/RX5QhGQpW94.ja.json",
+    "zh-Hant": "subtitles/RX5QhGQpW94/RX5QhGQpW94.zh-Hant.json",
+    "en-orig": "subtitles/RX5QhGQpW94/RX5QhGQpW94.en-orig.json",
+    "zh-Hans": "subtitles/RX5QhGQpW94/RX5QhGQpW94.zh-Hans.json"
+  },
+  "eB69vFlRJ8U": {
+    "en-orig": "subtitles/eB69vFlRJ8U/eB69vFlRJ8U.en-orig.json",
+    "en": "subtitles/eB69vFlRJ8U/eB69vFlRJ8U.en.json"
+  },
+  "xXv3rIX3Unk": {
+    "en": "subtitles/xXv3rIX3Unk/xXv3rIX3Unk.en.json",
+    "en-orig": "subtitles/xXv3rIX3Unk/xXv3rIX3Unk.en-orig.json"
+  },
+  "3V5iJmjMdwU": {
+    "en-orig": "subtitles/3V5iJmjMdwU/3V5iJmjMdwU.en-orig.json",
+    "en": "subtitles/3V5iJmjMdwU/3V5iJmjMdwU.en.json"
+  },
+  "bHI_vY2rJQw": {
+    "en-orig": "subtitles/bHI_vY2rJQw/bHI_vY2rJQw.en-orig.json",
+    "en": "subtitles/bHI_vY2rJQw/bHI_vY2rJQw.en.json"
+  },
+  "cEl2DELBY1A": {
+    "en": "subtitles/cEl2DELBY1A/cEl2DELBY1A.en.json",
+    "en-orig": "subtitles/cEl2DELBY1A/cEl2DELBY1A.en-orig.json"
+  },
+  "YauEy4CBEVY": {
+    "en": "subtitles/YauEy4CBEVY/YauEy4CBEVY.en.json",
+    "en-orig": "subtitles/YauEy4CBEVY/YauEy4CBEVY.en-orig.json"
+  },
+  "Q1fYownseYo": {
+    "zh-Hant": "subtitles/Q1fYownseYo/Q1fYownseYo.zh-Hant.json",
+    "zh-Hans": "subtitles/Q1fYownseYo/Q1fYownseYo.zh-Hans.json",
+    "ja": "subtitles/Q1fYownseYo/Q1fYownseYo.ja.json",
+    "en-orig": "subtitles/Q1fYownseYo/Q1fYownseYo.en-orig.json",
+    "en": "subtitles/Q1fYownseYo/Q1fYownseYo.en.json"
+  },
+  "xQGhrPk9mZI": {
+    "en-orig": "subtitles/xQGhrPk9mZI/xQGhrPk9mZI.en-orig.json",
+    "en": "subtitles/xQGhrPk9mZI/xQGhrPk9mZI.en.json"
+  }
 }
