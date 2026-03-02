@@ -46,8 +46,6 @@ for vid in streams:
 
         "--sub-langs","all,live_chat",
 
-        "--convert-subs","srt",
-
         "--ignore-errors",
         "--no-warnings",
 
