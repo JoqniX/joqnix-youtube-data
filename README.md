@@ -1,94 +1,214 @@
+Your current README is good, but a few things are missing or messy:
 
+1. Formatting broke (folders and code blocks should use ``` for GitHub).
+
+
+2. It doesn't mention the other two pipelines:
+
+fetching all streams
+
+fetching playlist membership
+
+
+
+3. The repo actually has three automated data pipelines, not one.
+
+
+4. It can look much cleaner with sections and diagrams.
+
+
+
+I'll give you a fully improved README.md that:
+
+fixes formatting
+
+explains the 3 automation tasks
+
+documents the data architecture
+
+adds a pipeline overview
+
+looks clean on GitHub
+
+
+You can replace your README.md entirely with this.
+
+
+---
+
+Complete README.md
 
 # JoqniX YouTube Archive Data
 
 This repository stores structured archive data for the **JoqniX YouTube channel**.
 
-It automatically collects subtitles, live chat, transcripts, and timeline data from streams using **yt-dlp** and processes them into formats that can power custom archive tools.
+It automatically collects livestream metadata, playlists, subtitles, chat replay, transcripts, and timeline data using **yt-dlp** and GitHub Actions.
 
-The data in this repository is used by the **Livestream Archives page** on the JoqniX website:
+The generated data powers the **Livestream Archives viewer** on the JoqniX website:
 
 https://joqnix.space/livestream-archives
 
+---
+
+# Overview
+
+This repository acts as a **self-hosted data backend for JoqniX livestream archives**.
+
+Instead of relying on third-party APIs or external archive services, this repository generates and stores structured data that can be directly consumed by the JoqniX website.
+
+The system is conceptually similar to how **Holodex archives livestream data**, but is customized for the JoqniX channel.
 
 ---
 
-# Purpose
+# Automation Pipelines
 
-The goal of this repository is to create a **self-hosted archive system** similar to Holodex.
+This repository runs **three automated pipelines using GitHub Actions**.
 
-Instead of relying on external APIs, this repository stores structured data that can be directly consumed by the JoqniX website.
+## 1️⃣ Channel Stream Scanner
 
-Features enabled by this system include:
+Fetches **all livestream video IDs from the JoqniX channel**.
 
-• Subtitle browsing  
-• Transcript display  
-• Clickable timestamps  
-• Replayable livestream chat  
-• Timeline navigation  
-• Fast chunked loading for large streams  
+Purpose:
+- Maintain a complete list of streams
+- Ensure new streams automatically enter the archive pipeline
 
-
----
-
-# Automation
-
-Data is collected automatically using **GitHub Actions**.
-
-The workflow periodically:
-
-1. Reads a list of stream video IDs from:
+Data stored in:
 
 data/streams.json
 
-2. Downloads subtitles and live chat using **yt-dlp**
+Example:
 
-3. Converts subtitles into structured JSON transcript format
+```json
+[
+  "RX5QhGQpW94",
+  "Q1fYownseYo",
+  "3V5iJmjMdwU"
+]
 
-4. Simplifies YouTube chat data
 
-5. Builds a timeline combining chat + subtitles
+---
+
+2️⃣ Playlist Mapping
+
+Fetches all playlists on the JoqniX channel and maps which videos belong to each playlist.
+
+This allows the website to display:
+
+stream series
+
+themed playlists
+
+playlist navigation
+
+
+Output:
+
+data/playlist_map.json
+
+Example structure:
+
+{
+  "playlist_id": {
+    "title": "Gaming Streams",
+    "videos": [
+      "RX5QhGQpW94",
+      "Q1fYownseYo"
+    ]
+  }
+}
+
+This data is also pushed to a Cloudflare Worker API used by the website backend.
+
+
+---
+
+3️⃣ Subtitle + Chat Archive Pipeline
+
+The main archive pipeline.
+
+For each stream listed in streams.json, the workflow:
+
+1. Downloads subtitles using yt-dlp
+
+
+2. Downloads livestream chat replay
+
+
+3. Converts subtitles into structured transcript JSON
+
+
+4. Simplifies chat replay data
+
+
+5. Builds synchronized timelines
+
 
 6. Splits timelines into minute chunks for fast loading
 
-7. Commits generated data back into the repository
+
+
+
+---
+
+Repository Structure
+
+data/
+  streams.json
+  playlist_map.json
+
+subtitles/
+  VIDEO_ID/
+    VIDEO_ID.en.vtt
+    VIDEO_ID.en.srt
+    VIDEO_ID.en.json
+
+livechat/
+  VIDEO_ID/
+    VIDEO_ID.live_chat.json
+    VIDEO_ID.chat_simple.json
+
+timeline/
+  VIDEO_ID/
+    timeline_en.json
+    timeline_en-orig.json
+    timeline_ja.json
+    timeline_zh-Hans.json
+    timeline_zh-Hant.json
+
+timeline_chunks/
+  VIDEO_ID/
+    en/
+      chunk_0.json
+      chunk_1.json
+    ja/
+      chunk_0.json
+
+scripts/
+  fetch_subtitles.sh
 
 
 ---
 
-# Repository Structure
+Subtitle Data
 
-data/ streams.json
+Subtitles are downloaded using yt-dlp.
 
-subtitles/ VIDEO_ID/ VIDEO_ID.en.vtt VIDEO_ID.en.srt VIDEO_ID.en.json
+Supported languages:
 
-livechat/ VIDEO_ID/ VIDEO_ID.live_chat.json VIDEO_ID.chat_simple.json
+en
+en-orig
+ja
+zh-Hans
+zh-Hant
 
-timeline/ VIDEO_ID/ timeline_en.json timeline_ja.json
+Each subtitle track is stored in three formats:
 
-timeline_chunks/ VIDEO_ID/ en/ chunk_0.json chunk_1.json chunk_2.json
-
-scripts/ fetch_subtitles.sh
-
----
-
-# Data Formats
-
-## Subtitles
-
-Subtitles are downloaded from YouTube using **yt-dlp**.
-
-Languages currently supported:
-
-en en-orig ja zh-Hans zh-Hant
-
-Each subtitle track is stored as:
-
-.vtt  (original format) .srt  (converted format) .json (structured transcript)
+.vtt  original YouTube format
+.srt  converted subtitle format
+.json structured transcript format
 
 Example transcript JSON:
 
-```json
 {
   "video_id": "RX5QhGQpW94",
   "segments": [
@@ -103,28 +223,26 @@ Example transcript JSON:
   ]
 }
 
-The JSON format is inspired by the Holodex transcript structure.
+This format is inspired by the Holodex transcript structure.
 
 
 ---
 
-Live Chat
+Livestream Chat
 
-YouTube livestream chat replay is downloaded using:
+Chat replay is downloaded using:
 
-yt-dlp --sub-langs live\_chat
+yt-dlp --sub-langs live_chat
 
-The raw chat file is stored as:
+Raw data:
 
-VIDEO\_ID.live\_chat.json
+VIDEO_ID.live_chat.json
 
-This file contains the full YouTube replay structure.
+Simplified data:
 
-It is then simplified into:
+VIDEO_ID.chat_simple.json
 
-VIDEO\_ID.chat\_simple.json
-
-Example simplified chat message:
+Example simplified message:
 
 {
   "time": 183.8,
@@ -134,16 +252,16 @@ Example simplified chat message:
   "message": "Hi It's Me Franco 👋 🙂"
 }
 
-This simplified format is designed for easy rendering on the website.
+This simplified structure is optimized for rendering chat in the website UI.
 
 
 ---
 
 Timeline System
 
-A timeline system merges subtitles and chat messages into a single chronological event list.
+The timeline merges subtitles and chat messages into a single chronological event list.
 
-Example event:
+Example subtitle event:
 
 {
   "type": "subtitle",
@@ -152,7 +270,7 @@ Example event:
   "text": "Let's start the game"
 }
 
-or
+Example chat event:
 
 {
   "type": "chat",
@@ -163,95 +281,105 @@ or
   "message": "Good luck!"
 }
 
-
----
-
-Timeline Files
-
-Each subtitle language gets its own timeline:
-
-timeline/VIDEO\_ID/timeline\_en.json
-timeline/VIDEO\_ID/timeline\_ja.json
-
-This allows the website to switch subtitle languages dynamically.
+This allows subtitles and chat to be synchronized with the video playback timeline.
 
 
 ---
 
 Timeline Chunking
 
-Streams can contain thousands of events, which would be slow to load all at once.
+Livestreams can contain thousands of timeline events.
 
-To solve this, timelines are split into 1-minute chunks.
+To prevent slow loading, timelines are split into 1-minute chunks.
 
-timeline\_chunks/
-VIDEO\_ID/
-en/
-chunk\_0.json
-chunk\_1.json
-chunk\_2.json
+Example:
 
-This allows the website to load timeline data on demand while the user scrolls.
+timeline_chunks/
+  VIDEO_ID/
+    en/
+      chunk_0.json
+      chunk_1.json
+      chunk_2.json
+
+The website loads chunks dynamically while the user scrolls through the timeline.
 
 
 ---
 
 Website Integration
 
-The archive data is consumed by the JoqniX website.
+All generated data is consumed by the JoqniX website.
 
-Livestream archive page:
+Livestream archive viewer:
 
 https://joqnix.space/livestream-archives
 
-The website uses these files to power features such as:
+The website uses this data for:
 
-• transcript viewing
-• chat replay
-• timestamp navigation
-• subtitle search
-• timeline scrubbing
+transcript viewing
+
+chat replay
+
+subtitle language switching
+
+timeline navigation
+
+timestamp scrubbing
+
 
 
 ---
 
 Technology Used
 
-Automation and data extraction relies on:
+Automation:
 
-• yt-dlp
-• Python
-• GitHub Actions
+yt-dlp
 
-The website frontend uses:
+Python
 
-• Webstudio
-• static JSON collections
-• custom UI components
+GitHub Actions
+
+
+Website frontend:
+
+Webstudio
+
+JSON collections
+
+custom UI components
+
 
 
 ---
 
 Notes
 
-This repository only stores structured metadata and subtitles.
+This repository stores metadata and subtitles only.
 
-It does not store video content.
+It does not store any video content.
 
-All video playback still occurs through YouTube embeds.
+All video playback occurs through embedded YouTube players.
 
 
 ---
 
 Future Improvements
 
-Possible improvements include:
+Potential upgrades:
 
-• transcript search across all streams
-• chat emoji rendering
-• superchat detection
-• stream chapter generation
-• AI generated highlights
+global transcript search
+
+emoji rendering in chat
+
+superchat detection
+
+automatic chapter generation
+
+highlight detection
+
+AI clip discovery
+
 
 
 ---
@@ -263,6 +391,11 @@ JoqniX
 Astral Progenitor of Constellations
 VTuber / Creator / Streamer
 
+Website
 https://joqnix.space
 
+Livestream Archives
+https://joqnix.space/livestream-archives
+
 ---
+
