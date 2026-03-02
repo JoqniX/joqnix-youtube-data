@@ -16,27 +16,27 @@ import subprocess
 import time
 import re
 
-langs = ["en","en-orig","ja","zh-Hans","zh-Hant"]
+langs=["en","en-orig","ja","zh-Hans","zh-Hant"]
 
 with open("data/streams.json") as f:
-    streams = json.load(f)
+    streams=json.load(f)
 
-limit = 10
-processed = 0
+limit=10
+processed=0
 
 
 # ---------- TIMESTAMP ----------
 def seconds_to_timestamp(sec):
 
-    h = int(sec // 3600)
-    m = int((sec % 3600) // 60)
-    s = int(sec % 60)
+    h=int(sec//3600)
+    m=int((sec%3600)//60)
+    s=int(sec%60)
 
     return f"{h:02}:{m:02}:{s:02}"
 
 
-# ---------- SRT → HOLODEX ----------
-def srt_to_holodex(video_id, srt_path, json_path):
+# ---------- SRT → TRANSCRIPT ----------
+def srt_to_holodex(video_id,srt_path,json_path):
 
     with open(srt_path,"r",encoding="utf-8") as f:
         content=f.read()
@@ -61,7 +61,7 @@ def srt_to_holodex(video_id, srt_path, json_path):
 
         def parse(t):
             h,m,s=t.replace(",",".").split(":")
-            return int(h)*3600 + int(m)*60 + float(s)
+            return int(h)*3600+int(m)*60+float(s)
 
         start=parse(start)
         end=parse(end)
@@ -84,18 +84,16 @@ def srt_to_holodex(video_id, srt_path, json_path):
             f"{seconds_to_timestamp(start)} {text}"
         )
 
-    data={
-        "video_id":video_id,
-        "segments":segments,
-        "simplified":simplified
-    }
-
     with open(json_path,"w",encoding="utf-8") as f:
-        json.dump(data,f,ensure_ascii=False)
+        json.dump({
+            "video_id":video_id,
+            "segments":segments,
+            "simplified":simplified
+        },f,ensure_ascii=False)
 
 
 # ---------- CHAT SIMPLIFIER ----------
-def simplify_livechat(input_file, output_file):
+def simplify_livechat(input_file,output_file):
 
     messages=[]
 
@@ -123,7 +121,6 @@ def simplify_livechat(input_file, output_file):
                     continue
 
                 author=renderer.get("authorName",{}).get("simpleText","")
-                author_id=renderer.get("authorExternalChannelId","")
 
                 avatar=""
                 thumbs=renderer.get("authorPhoto",{}).get("thumbnails",[])
@@ -133,70 +130,41 @@ def simplify_livechat(input_file, output_file):
                 runs_data=renderer.get("message",{}).get("runs",[])
 
                 message=""
-                runs=[]
 
                 for r in runs_data:
 
                     if "text" in r:
-
                         message+=r["text"]
 
-                        runs.append({
-                            "type":"text",
-                            "text":r["text"]
-                        })
-
                     elif "emoji" in r:
-
-                        emoji=r["emoji"]
-                        emoji_char=emoji.get("emojiId","")
-
-                        img=""
-                        thumbs=emoji.get("image",{}).get("thumbnails",[])
-                        if thumbs:
-                            img=thumbs[-1]["url"]
-
-                        message+=emoji_char
-
-                        runs.append({
-                            "type":"emoji",
-                            "text":emoji_char,
-                            "url":img
-                        })
-
-                timestamp=seconds_to_timestamp(offset)
+                        message+=r["emoji"].get("emojiId","")
 
                 messages.append({
                     "time":offset,
-                    "timestamp":timestamp,
+                    "timestamp":seconds_to_timestamp(offset),
                     "author":author,
-                    "author_id":author_id,
                     "avatar":avatar,
-                    "message":message,
-                    "runs":runs
+                    "message":message
                 })
 
     with open(output_file,"w",encoding="utf-8") as f:
         json.dump(messages,f,ensure_ascii=False)
 
 
-# ---------- TIMELINE ----------
+# ---------- BUILD TIMELINE ----------
 def build_timeline(video_id):
 
-    subtitle_file=f"subtitles/{video_id}/{video_id}.en.json"
+    sub_file=f"subtitles/{video_id}/{video_id}.en.json"
     chat_file=f"livechat/{video_id}/chat_simple.json"
-
-    output=f"timeline/{video_id}.timeline.json"
 
     events=[]
 
-    if os.path.exists(subtitle_file):
+    if os.path.exists(sub_file):
 
-        with open(subtitle_file,"r",encoding="utf-8") as f:
+        with open(sub_file,"r",encoding="utf-8") as f:
             subs=json.load(f)
 
         for seg in subs["segments"]:
-
             events.append({
                 "type":"subtitle",
                 "time":seg["start"],
@@ -210,7 +178,6 @@ def build_timeline(video_id):
             chats=json.load(f)
 
         for msg in chats:
-
             events.append({
                 "type":"chat",
                 "time":msg["time"],
@@ -220,13 +187,15 @@ def build_timeline(video_id):
                 "message":msg["message"]
             })
 
-    events.sort(key=lambda x: x["time"])
+    events.sort(key=lambda x:x["time"])
 
-    with open(output,"w",encoding="utf-8") as f:
+    out=f"timeline/{video_id}.timeline.json"
+
+    with open(out,"w",encoding="utf-8") as f:
         json.dump({"video_id":video_id,"events":events},f,ensure_ascii=False)
 
 
-# ---------- TIMELINE CHUNKS ----------
+# ---------- BUILD TIMELINE CHUNKS ----------
 def build_timeline_chunks(video_id):
 
     timeline_file=f"timeline/{video_id}.timeline.json"
@@ -239,8 +208,8 @@ def build_timeline_chunks(video_id):
 
     events=data["events"]
 
-    chunk_folder=f"timeline_chunks/{video_id}"
-    os.makedirs(chunk_folder,exist_ok=True)
+    chunk_dir=f"timeline_chunks/{video_id}"
+    os.makedirs(chunk_dir,exist_ok=True)
 
     chunks={}
 
@@ -255,7 +224,7 @@ def build_timeline_chunks(video_id):
 
     for minute in chunks:
 
-        path=f"{chunk_folder}/chunk_{minute}.json"
+        path=f"{chunk_dir}/chunk_{minute}.json"
 
         with open(path,"w",encoding="utf-8") as f:
             json.dump(chunks[minute],f,ensure_ascii=False)
@@ -264,8 +233,10 @@ def build_timeline_chunks(video_id):
 # ---------- MAIN LOOP ----------
 for vid in streams:
 
-    if processed >= limit:
+    if processed>=limit:
         break
+
+    print("Processing:",vid)
 
     sub_folder=f"subtitles/{vid}"
     chat_folder=f"livechat/{vid}"
@@ -275,46 +246,55 @@ for vid in streams:
 
     url=f"https://www.youtube.com/watch?v={vid}"
 
-    print("Processing:",vid)
-
+    # SUBTITLES
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
+        "--js-runtimes","node",
+        "--remote-components","github",
         "--write-subs",
         "--write-auto-subs",
         "--sub-langs","en,en-orig,ja,zh-Hans,zh-Hant",
         "--skip-download",
+        "--no-overwrites",
         "-k",
         "--convert-subs","srt",
         "-o",f"{sub_folder}/%(id)s.%(ext)s",
         url
     ])
 
+    # LIVECHAT
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
+        "--js-runtimes","node",
+        "--remote-components","github",
         "--skip-download",
         "--write-subs",
         "--sub-langs","live_chat",
         "--sub-format","json",
+        "--no-overwrites",
         "-o",f"{chat_folder}/%(id)s.live_chat.%(ext)s",
         url
     ])
 
+    # TRANSCRIPTS
     for lang in langs:
 
         srt=f"{sub_folder}/{vid}.{lang}.srt"
-        json_out=f"{sub_folder}/{vid}.{lang}.json"
+        js=f"{sub_folder}/{vid}.{lang}.json"
 
         if os.path.exists(srt):
-            srt_to_holodex(vid,srt,json_out)
+            srt_to_holodex(vid,srt,js)
 
-    chat_raw=f"{chat_folder}/{vid}.live_chat.json"
-    chat_simple=f"{chat_folder}/{vid}.chat_simple.json"
+    # CHAT SIMPLIFY
+    raw=f"{chat_folder}/{vid}.live_chat.json"
+    simp=f"{chat_folder}/{vid}.chat_simple.json"
 
-    if os.path.exists(chat_raw):
-        simplify_livechat(chat_raw,chat_simple)
+    if os.path.exists(raw):
+        simplify_livechat(raw,simp)
 
+    # TIMELINE
     build_timeline(vid)
     build_timeline_chunks(vid)
 
