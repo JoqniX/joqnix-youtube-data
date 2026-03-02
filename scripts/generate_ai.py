@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 from pathlib import Path
 
@@ -74,7 +75,7 @@ def fetch_transcript_github(video_id):
 
     except Exception as e:
 
-        print(f"Failed to fetch transcript from GitHub: {e}")
+        print("GitHub fetch failed:", e)
         return None
 
 
@@ -102,20 +103,41 @@ def call_ai(prompt):
                 "content": prompt
             }
         ],
-        "temperature": 0.3,
-        "max_tokens": 1000
+        "temperature": 0.4,
+        "max_tokens": 1200
     }
 
     r = requests.post(URL, headers=HEADERS, json=payload)
 
     if r.status_code != 200:
+
         print("Groq API Error:")
         print(r.text)
-        r.raise_for_status()
+
+        raise Exception("Groq API failure")
 
     data = r.json()
 
     return data["choices"][0]["message"]["content"]
+
+
+def find_next_video():
+
+    for root, dirs, files in os.walk(SUBTITLE_DIR):
+
+        for file in files:
+
+            if not file.endswith(".en.json"):
+                continue
+
+            video_id = file.split(".")[0]
+
+            summary_path = Path(AI_DIR) / video_id / "summary.en.json"
+
+            if not summary_path.exists():
+                return video_id
+
+    return None
 
 
 def process_video(video_id):
@@ -126,14 +148,10 @@ def process_video(video_id):
     summary_path = ai_folder / "summary.en.json"
     chapters_path = ai_folder / "chapters.en.json"
 
-    if summary_path.exists():
-        print(f"Skipping {video_id}, already processed")
-        return
-
     transcript = get_transcript(video_id)
 
     if not transcript:
-        print(f"No transcript found for {video_id}")
+        print("Transcript missing.")
         return
 
     compressed = compress_transcript(transcript)
@@ -146,16 +164,17 @@ Analyze this livestream transcript.
 Return JSON only in this format:
 
 {{
- "summary": "short stream summary",
+ "summary": "150-250 word summary of the stream",
  "chapters": [
    {{"time": "MM:SS", "title": "chapter title"}}
  ]
 }}
 
 Rules:
-- chapters every 3–10 minutes
-- titles short
-- no explanations
+- Summary should be medium length (150–250 words)
+- Chapters spaced roughly every 3–10 minutes
+- Titles short
+- No explanation text
 - JSON only
 
 Transcript:
@@ -170,10 +189,9 @@ Transcript:
 
     except Exception as e:
 
-        print("AI parsing failed:")
+        print("AI parsing failed")
         print(e)
-        print("AI response:")
-        print(response if 'response' in locals() else "None")
+        print("Response:", response)
         return
 
     with open(summary_path, "w", encoding="utf-8") as f:
@@ -190,20 +208,20 @@ Transcript:
             "chapters": result.get("chapters", [])
         }, f, indent=2)
 
-    print(f"Generated AI metadata for {video_id}")
+    print("Generated AI metadata for", video_id)
 
 
 def main():
 
-    for root, dirs, files in os.walk(SUBTITLE_DIR):
+    video_id = find_next_video()
 
-        for file in files:
+    if not video_id:
+        print("All videos already processed")
+        return
 
-            if file.endswith(".en.json"):
+    print("Processing video:", video_id)
 
-                video_id = file.split(".")[0]
-
-                process_video(video_id)
+    process_video(video_id)
 
 
 if __name__ == "__main__":
