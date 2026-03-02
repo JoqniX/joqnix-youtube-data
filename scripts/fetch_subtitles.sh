@@ -15,7 +15,7 @@ import time
 with open("data/streams.json") as f:
     streams = json.load(f)
 
-limit = 3
+limit = 5
 processed = 0
 
 for vid in streams:
