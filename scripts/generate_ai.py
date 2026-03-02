@@ -6,6 +6,9 @@ from pathlib import Path
 SUBTITLE_DIR = "subtitles"
 AI_DIR = "ai"
 
+GITHUB_REPO = "JoqniX/joqnix-youtube-data"
+GITHUB_BRANCH = "Main-dayo"
+
 API_KEY = os.getenv("GROQ_API_KEY")
 
 URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -20,9 +23,11 @@ MODEL = "llama3-70b-8192"
 
 def compress_transcript(segments):
     """Reduce transcript size to avoid token limits"""
+
     lines = []
 
-    for seg in segments[::5]:  # take every 5th subtitle
+    for seg in segments[::5]:
+
         start = int(seg.get("start", 0))
         text = seg.get("text", "")
 
@@ -30,9 +35,55 @@ def compress_transcript(segments):
         seconds = start % 60
 
         timestamp = f"{minutes:02}:{seconds:02}"
+
         lines.append(f"{timestamp} {text}")
 
     return "\n".join(lines)
+
+
+def fetch_transcript_local(video_id):
+
+    path = Path(SUBTITLE_DIR) / video_id / f"{video_id}.en.json"
+
+    if path.exists():
+
+        print(f"Loading transcript locally for {video_id}")
+
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    return None
+
+
+def fetch_transcript_github(video_id):
+
+    url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/subtitles/{video_id}/{video_id}.en.json"
+
+    try:
+
+        print(f"Fetching transcript from GitHub for {video_id}")
+
+        r = requests.get(url)
+        r.raise_for_status()
+
+        return r.json()
+
+    except Exception as e:
+
+        print(f"Failed to fetch transcript from GitHub: {e}")
+        return None
+
+
+def get_transcript(video_id):
+
+    transcript = fetch_transcript_local(video_id)
+
+    if transcript:
+        return transcript
+
+    transcript = fetch_transcript_github(video_id)
+
+    return transcript
 
 
 def call_ai(prompt):
@@ -54,7 +105,7 @@ def call_ai(prompt):
     return data["choices"][0]["message"]["content"]
 
 
-def process_video(video_id, transcript_file):
+def process_video(video_id):
 
     ai_folder = Path(AI_DIR) / video_id
     ai_folder.mkdir(parents=True, exist_ok=True)
@@ -66,8 +117,11 @@ def process_video(video_id, transcript_file):
         print(f"Skipping {video_id}, already processed")
         return
 
-    with open(transcript_file, "r", encoding="utf-8") as f:
-        transcript = json.load(f)
+    transcript = get_transcript(video_id)
+
+    if not transcript:
+        print(f"No transcript found for {video_id}")
+        return
 
     compressed = compress_transcript(transcript)
 
@@ -92,25 +146,30 @@ Transcript:
     response = call_ai(prompt)
 
     try:
+
         result = json.loads(response)
+
     except:
+
         print("AI returned invalid JSON")
         print(response)
         return
 
-    with open(summary_path, "w") as f:
+    with open(summary_path, "w", encoding="utf-8") as f:
+
         json.dump({
             "video_id": video_id,
             "summary": result.get("summary", "")
         }, f, indent=2)
 
-    with open(chapters_path, "w") as f:
+    with open(chapters_path, "w", encoding="utf-8") as f:
+
         json.dump({
             "video_id": video_id,
             "chapters": result.get("chapters", [])
         }, f, indent=2)
 
-    print("Generated AI metadata for", video_id)
+    print(f"Generated AI metadata for {video_id}")
 
 
 def main():
@@ -122,9 +181,8 @@ def main():
             if file.endswith(".en.json"):
 
                 video_id = file.split(".")[0]
-                path = os.path.join(root, file)
 
-                process_video(video_id, path)
+                process_video(video_id)
 
 
 if __name__ == "__main__":
