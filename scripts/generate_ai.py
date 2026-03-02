@@ -21,15 +21,21 @@ HEADERS = {
 MODEL = "llama3-70b-8192"
 
 
-def compress_transcript(segments):
+def compress_transcript(data):
     """Reduce transcript size to avoid token limits"""
+
+    # support both formats
+    if isinstance(data, dict) and "segments" in data:
+        segments = data["segments"]
+    else:
+        segments = data
 
     lines = []
 
     for seg in segments[::5]:
 
         start = int(seg.get("start", 0))
-        text = seg.get("text", "")
+        text = seg.get("text", "").replace("\n", " ").strip()
 
         minutes = start // 60
         seconds = start % 60
@@ -39,7 +45,7 @@ def compress_transcript(segments):
         lines.append(f"{timestamp} {text}")
 
     return "\n".join(lines)
-
+    
 
 def fetch_transcript_local(video_id):
 
