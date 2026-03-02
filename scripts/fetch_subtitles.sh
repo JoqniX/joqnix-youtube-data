@@ -34,7 +34,7 @@ for vid in streams:
     os.makedirs(sub_folder, exist_ok=True)
     os.makedirs(chat_folder, exist_ok=True)
 
-    # SUBTITLES (EN + JP + CN)
+    # SUBTITLES
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
@@ -49,7 +49,6 @@ for vid in streams:
         "--skip-download",
         "--ignore-no-formats-error",
 
-        "--sub-format","best",
         "--convert-subs","srt",
 
         "--ignore-errors",
