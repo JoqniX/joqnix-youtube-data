@@ -36,11 +36,13 @@ for vid in streams:
         "--js-runtimes","node",
         "--remote-components","github",
 
-        "--skip-download",
-
+        "--write-subs",
         "--write-auto-subs",
         "--sub-langs","en",
         "--sub-format","srt",
+
+        "--skip-download",
+        "--ignore-no-formats-error",
 
         "--ignore-errors",
         "--no-warnings",
