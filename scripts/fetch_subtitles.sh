@@ -15,7 +15,7 @@ import time
 with open("data/streams.json") as f:
     streams = json.load(f)
 
-limit = 5
+limit = 3
 processed = 0
 
 for vid in streams:
@@ -26,7 +26,6 @@ for vid in streams:
     folder = f"subtitles/{vid}"
     url = f"https://www.youtube.com/watch?v={vid}"
 
-    # Skip if files already exist
     if os.path.exists(folder) and len(os.listdir(folder)) > 0:
         print("Skipping existing:", vid)
         continue
@@ -41,13 +40,17 @@ for vid in streams:
         "--js-runtimes","node",
         "--remote-components","github",
         "--skip-download",
+
         "--write-subs",
         "--write-auto-subs",
+
         "--sub-langs","all,live_chat",
+
         "--convert-subs","srt",
-        "--force-overwrites",
+
         "--ignore-errors",
         "--no-warnings",
+
         "-o",f"{folder}/%(id)s.%(ext)s",
         url
     ])
