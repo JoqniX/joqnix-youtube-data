@@ -53,10 +53,15 @@ jobs:
       - name: Run subtitle script
         run: bash scripts/fetch_subtitles.sh
 
-      - name: Commit subtitles and livechat
+      - name: Commit generated data
         run: |
           git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add subtitles livechat
-          git commit -m "Update subtitles and livechat" || echo "No changes"
+          git config --global user.email "github-actions@github.com"
+
+          git add subtitles
+          git add livechat
+          git add timeline
+          git add timeline_chunks
+
+          git commit -m "Update archive data" || echo "No changes"
           git push
