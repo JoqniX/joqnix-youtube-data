@@ -306,7 +306,7 @@ for vid in streams:
     raw=f"{chat_folder}/{vid}.live_chat.json"
     simp=f"{chat_folder}/{vid}.chat_simple.json"
 
-    if os.path.exists(raw) and not os.path.exists(simp):
+    if os.path.exists(raw):
     simplify_livechat(raw,simp)
 
     build_timeline(vid)
