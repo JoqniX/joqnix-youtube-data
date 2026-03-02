@@ -64,8 +64,7 @@ def srt_to_holodex(video_id, srt_path, json_path):
         start=parse(start)
         end=parse(end)
 
-        # ----- DUPLICATE CLEANING -----
-
+        # ---- REMOVE DUPLICATE AUTO CAPTIONS ----
         if last_text and text.startswith(last_text):
             continue
 
@@ -94,6 +93,92 @@ def srt_to_holodex(video_id, srt_path, json_path):
         json.dump(data,f,ensure_ascii=False)
 
 
+# ---------- SIMPLIFY LIVE CHAT ----------
+def simplify_livechat(input_file, output_file):
+
+    messages=[]
+
+    with open(input_file,"r",encoding="utf-8") as f:
+
+        for line in f:
+
+            try:
+                data=json.loads(line)
+            except:
+                continue
+
+            action=data.get("replayChatItemAction")
+            if not action:
+                continue
+
+            offset=float(action.get("videoOffsetTimeMsec","0"))/1000
+
+            for a in action.get("actions",[]):
+
+                item=a.get("addChatItemAction",{}).get("item",{})
+                renderer=item.get("liveChatTextMessageRenderer")
+
+                if not renderer:
+                    continue
+
+                author=renderer.get("authorName",{}).get("simpleText","")
+                author_id=renderer.get("authorExternalChannelId","")
+
+                avatar=""
+                thumbs=renderer.get("authorPhoto",{}).get("thumbnails",[])
+                if thumbs:
+                    avatar=thumbs[-1]["url"]
+
+                runs_data=renderer.get("message",{}).get("runs",[])
+
+                message=""
+                runs=[]
+
+                for r in runs_data:
+
+                    if "text" in r:
+
+                        message+=r["text"]
+
+                        runs.append({
+                            "type":"text",
+                            "text":r["text"]
+                        })
+
+                    elif "emoji" in r:
+
+                        emoji=r["emoji"]
+                        emoji_char=emoji.get("emojiId","")
+
+                        img=""
+                        thumbs=emoji.get("image",{}).get("thumbnails",[])
+                        if thumbs:
+                            img=thumbs[-1]["url"]
+
+                        message+=emoji_char
+
+                        runs.append({
+                            "type":"emoji",
+                            "text":emoji_char,
+                            "url":img
+                        })
+
+                timestamp=seconds_to_timestamp(offset)
+
+                messages.append({
+                    "time":offset,
+                    "timestamp":timestamp,
+                    "author":author,
+                    "author_id":author_id,
+                    "avatar":avatar,
+                    "message":message,
+                    "runs":runs
+                })
+
+    with open(output_file,"w",encoding="utf-8") as f:
+        json.dump(messages,f,ensure_ascii=False)
+
+
 # ---------- MAIN LOOP ----------
 for vid in streams:
 
@@ -110,10 +195,11 @@ for vid in streams:
 
     print("Checking:", vid)
 
-    # ---- CHECK SUBTITLES ----
+    # ---------- CHECK SUBTITLES ----------
     subtitles_complete = True
 
     for lang in langs:
+
         vtt = f"{sub_folder}/{vid}.{lang}.vtt"
         srt = f"{sub_folder}/{vid}.{lang}.srt"
 
@@ -121,7 +207,7 @@ for vid in streams:
             subtitles_complete = False
             break
 
-    # ---- CHECK LIVECHAT ----
+    # ---------- CHECK CHAT ----------
     chat_file = f"{chat_folder}/{vid}.live_chat.json"
     chat_complete = os.path.exists(chat_file)
 
@@ -131,7 +217,7 @@ for vid in streams:
 
     print("Downloading:", vid)
 
-    # ---------- SUBTITLES ----------
+    # ---------- DOWNLOAD SUBTITLES ----------
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
@@ -151,7 +237,7 @@ for vid in streams:
         url
     ])
 
-    # ---------- LIVE CHAT ----------
+    # ---------- DOWNLOAD LIVECHAT ----------
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
@@ -169,7 +255,7 @@ for vid in streams:
         url
     ])
 
-    # ---------- SRT → TRANSCRIPT JSON ----------
+    # ---------- CONVERT SUBTITLES ----------
     for lang in langs:
 
         srt_file=f"{sub_folder}/{vid}.{lang}.srt"
@@ -184,6 +270,16 @@ for vid in streams:
                 srt_file,
                 json_file
             )
+
+    # ---------- SIMPLIFY CHAT ----------
+    chat_raw=f"{chat_folder}/{vid}.live_chat.json"
+    chat_simple=f"{chat_folder}/{vid}.chat_simple.json"
+
+    if os.path.exists(chat_raw) and not os.path.exists(chat_simple):
+
+        print("Simplifying chat:",vid)
+
+        simplify_livechat(chat_raw,chat_simple)
 
     processed += 1
     time.sleep(2)
@@ -210,7 +306,6 @@ for root,dirs,files in os.walk("subtitles"):
             index[vid][lang]=os.path.join(root,file)
 
 with open("livechat/transcript_index.json","w",encoding="utf-8") as f:
-
     json.dump(index,f,ensure_ascii=False,indent=2)
 
 print("Done.")
