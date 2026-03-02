@@ -21,6 +21,8 @@ HEADERS = {
 
 MODEL = "llama-3.3-70b-versatile"
 
+MAX_RETRIES = 5
+
 
 def compress_transcript(data):
 
@@ -107,18 +109,38 @@ def call_ai(prompt):
         "max_tokens": 2000
     }
 
-    r = requests.post(URL, headers=HEADERS, json=payload)
+    for attempt in range(MAX_RETRIES):
 
-    if r.status_code != 200:
+        r = requests.post(URL, headers=HEADERS, json=payload)
 
-        print("Groq API Error:")
-        print(r.text)
+        if r.status_code == 200:
 
-        raise Exception("Groq API failure")
+            data = r.json()
 
-    data = r.json()
+            return data["choices"][0]["message"]["content"]
 
-    return data["choices"][0]["message"]["content"]
+        else:
+
+            error_text = r.text
+
+            print("Groq API Error:")
+            print(error_text)
+
+            if "rate_limit_exceeded" in error_text or "tokens per minute" in error_text:
+
+                wait_time = 30 * (attempt + 1)
+
+                print(f"Rate limit hit. Waiting {wait_time}s before retry...")
+
+                time.sleep(wait_time)
+
+                continue
+
+            else:
+
+                raise Exception("Groq API failure")
+
+    raise Exception("Max retries exceeded")
 
 
 def find_next_video():
@@ -138,6 +160,20 @@ def find_next_video():
                 return video_id
 
     return None
+
+
+def clean_ai_response(response):
+
+    response = response.strip()
+
+    if response.startswith("```"):
+
+        parts = response.split("```")
+
+        if len(parts) >= 2:
+            response = parts[1]
+
+    return response.strip()
 
 
 def process_video(video_id):
@@ -185,20 +221,16 @@ Transcript:
 
         response = call_ai(prompt)
 
-        response = response.strip()
+        response = clean_ai_response(response)
 
-if response.startswith("```"):
-    response = response.split("```")[1]
-
-response = response.strip()
-
-result = json.loads(response)
+        result = json.loads(response)
 
     except Exception as e:
 
         print("AI parsing failed")
         print(e)
-        print("Response:", response)
+        print("AI response:")
+        print(response if 'response' in locals() else "None")
         return
 
     with open(summary_path, "w", encoding="utf-8") as f:
