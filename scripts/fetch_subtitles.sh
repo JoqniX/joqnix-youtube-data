@@ -6,6 +6,8 @@ echo "======================================"
 
 mkdir -p subtitles
 mkdir -p livechat
+mkdir -p timeline
+mkdir -p timeline_chunks
 
 python3 << 'EOF'
 import json
@@ -23,7 +25,7 @@ limit = 10
 processed = 0
 
 
-# ---------- TIMESTAMP FORMAT ----------
+# ---------- TIMESTAMP ----------
 def seconds_to_timestamp(sec):
 
     h = int(sec // 3600)
@@ -33,7 +35,7 @@ def seconds_to_timestamp(sec):
     return f"{h:02}:{m:02}:{s:02}"
 
 
-# ---------- SRT → HOLODEX TRANSCRIPT ----------
+# ---------- SRT → HOLODEX ----------
 def srt_to_holodex(video_id, srt_path, json_path):
 
     with open(srt_path,"r",encoding="utf-8") as f:
@@ -64,7 +66,6 @@ def srt_to_holodex(video_id, srt_path, json_path):
         start=parse(start)
         end=parse(end)
 
-        # ---- REMOVE DUPLICATE AUTO CAPTIONS ----
         if last_text and text.startswith(last_text):
             continue
 
@@ -93,7 +94,7 @@ def srt_to_holodex(video_id, srt_path, json_path):
         json.dump(data,f,ensure_ascii=False)
 
 
-# ---------- SIMPLIFY LIVE CHAT ----------
+# ---------- CHAT SIMPLIFIER ----------
 def simplify_livechat(input_file, output_file):
 
     messages=[]
@@ -179,135 +180,147 @@ def simplify_livechat(input_file, output_file):
         json.dump(messages,f,ensure_ascii=False)
 
 
+# ---------- TIMELINE ----------
+def build_timeline(video_id):
+
+    subtitle_file=f"subtitles/{video_id}/{video_id}.en.json"
+    chat_file=f"livechat/{video_id}/chat_simple.json"
+
+    output=f"timeline/{video_id}.timeline.json"
+
+    events=[]
+
+    if os.path.exists(subtitle_file):
+
+        with open(subtitle_file,"r",encoding="utf-8") as f:
+            subs=json.load(f)
+
+        for seg in subs["segments"]:
+
+            events.append({
+                "type":"subtitle",
+                "time":seg["start"],
+                "timestamp":seconds_to_timestamp(seg["start"]),
+                "text":seg["text"]
+            })
+
+    if os.path.exists(chat_file):
+
+        with open(chat_file,"r",encoding="utf-8") as f:
+            chats=json.load(f)
+
+        for msg in chats:
+
+            events.append({
+                "type":"chat",
+                "time":msg["time"],
+                "timestamp":msg["timestamp"],
+                "author":msg["author"],
+                "avatar":msg["avatar"],
+                "message":msg["message"]
+            })
+
+    events.sort(key=lambda x: x["time"])
+
+    with open(output,"w",encoding="utf-8") as f:
+        json.dump({"video_id":video_id,"events":events},f,ensure_ascii=False)
+
+
+# ---------- TIMELINE CHUNKS ----------
+def build_timeline_chunks(video_id):
+
+    timeline_file=f"timeline/{video_id}.timeline.json"
+
+    if not os.path.exists(timeline_file):
+        return
+
+    with open(timeline_file,"r",encoding="utf-8") as f:
+        data=json.load(f)
+
+    events=data["events"]
+
+    chunk_folder=f"timeline_chunks/{video_id}"
+    os.makedirs(chunk_folder,exist_ok=True)
+
+    chunks={}
+
+    for e in events:
+
+        minute=int(e["time"]//60)
+
+        if minute not in chunks:
+            chunks[minute]=[]
+
+        chunks[minute].append(e)
+
+    for minute in chunks:
+
+        path=f"{chunk_folder}/chunk_{minute}.json"
+
+        with open(path,"w",encoding="utf-8") as f:
+            json.dump(chunks[minute],f,ensure_ascii=False)
+
+
 # ---------- MAIN LOOP ----------
 for vid in streams:
 
     if processed >= limit:
         break
 
-    sub_folder = f"subtitles/{vid}"
-    chat_folder = f"livechat/{vid}"
+    sub_folder=f"subtitles/{vid}"
+    chat_folder=f"livechat/{vid}"
 
-    url = f"https://www.youtube.com/watch?v={vid}"
+    os.makedirs(sub_folder,exist_ok=True)
+    os.makedirs(chat_folder,exist_ok=True)
 
-    os.makedirs(sub_folder, exist_ok=True)
-    os.makedirs(chat_folder, exist_ok=True)
+    url=f"https://www.youtube.com/watch?v={vid}"
 
-    print("Checking:", vid)
+    print("Processing:",vid)
 
-    # ---------- CHECK SUBTITLES ----------
-    subtitles_complete = True
-
-    for lang in langs:
-
-        vtt = f"{sub_folder}/{vid}.{lang}.vtt"
-        srt = f"{sub_folder}/{vid}.{lang}.srt"
-
-        if not (os.path.exists(vtt) and os.path.exists(srt)):
-            subtitles_complete = False
-            break
-
-    # ---------- CHECK CHAT ----------
-    chat_file = f"{chat_folder}/{vid}.live_chat.json"
-    chat_complete = os.path.exists(chat_file)
-
-    if subtitles_complete and chat_complete:
-        print("Skipping (already archived):", vid)
-        continue
-
-    print("Downloading:", vid)
-
-    # ---------- DOWNLOAD SUBTITLES ----------
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
-        "--js-runtimes","node",
-        "--remote-components","github",
         "--write-subs",
         "--write-auto-subs",
         "--sub-langs","en,en-orig,ja,zh-Hans,zh-Hant",
         "--skip-download",
-        "--ignore-no-formats-error",
-        "--no-overwrites",
         "-k",
         "--convert-subs","srt",
-        "--ignore-errors",
-        "--no-warnings",
         "-o",f"{sub_folder}/%(id)s.%(ext)s",
         url
     ])
 
-    # ---------- DOWNLOAD LIVECHAT ----------
     subprocess.run([
         "yt-dlp",
         "--cookies","cookies.txt",
-        "--js-runtimes","node",
-        "--remote-components","github",
         "--skip-download",
         "--write-subs",
         "--sub-langs","live_chat",
         "--sub-format","json",
-        "--ignore-no-formats-error",
-        "--no-overwrites",
-        "--ignore-errors",
-        "--no-warnings",
         "-o",f"{chat_folder}/%(id)s.live_chat.%(ext)s",
         url
     ])
 
-    # ---------- CONVERT SUBTITLES ----------
     for lang in langs:
 
-        srt_file=f"{sub_folder}/{vid}.{lang}.srt"
-        json_file=f"{sub_folder}/{vid}.{lang}.json"
+        srt=f"{sub_folder}/{vid}.{lang}.srt"
+        json_out=f"{sub_folder}/{vid}.{lang}.json"
 
-        if os.path.exists(srt_file) and not os.path.exists(json_file):
+        if os.path.exists(srt):
+            srt_to_holodex(vid,srt,json_out)
 
-            print("Creating transcript JSON:", vid, lang)
-
-            srt_to_holodex(
-                vid,
-                srt_file,
-                json_file
-            )
-
-    # ---------- SIMPLIFY CHAT ----------
     chat_raw=f"{chat_folder}/{vid}.live_chat.json"
     chat_simple=f"{chat_folder}/{vid}.chat_simple.json"
 
-    if os.path.exists(chat_raw) and not os.path.exists(chat_simple):
-
-        print("Simplifying chat:",vid)
-
+    if os.path.exists(chat_raw):
         simplify_livechat(chat_raw,chat_simple)
 
-    processed += 1
+    build_timeline(vid)
+    build_timeline_chunks(vid)
+
+    processed+=1
     time.sleep(2)
 
-
-# ---------- BUILD TRANSCRIPT INDEX ----------
-print("Building transcript index...")
-
-index={}
-
-for root,dirs,files in os.walk("subtitles"):
-
-    for file in files:
-
-        if file.endswith(".json"):
-
-            parts=file.split(".")
-            vid=parts[0]
-            lang=parts[1]
-
-            if vid not in index:
-                index[vid]={}
-
-            index[vid][lang]=os.path.join(root,file)
-
-with open("livechat/transcript_index.json","w",encoding="utf-8") as f:
-    json.dump(index,f,ensure_ascii=False,indent=2)
-
-print("Done.")
+print("Done")
 
 EOF
