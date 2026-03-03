@@ -3,7 +3,7 @@ name: Fetch Thumbnails
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */12 * * *"  # every 12 hours
+    - cron: "0 */12 * * *"
 
 jobs:
   fetch-thumbnails:
@@ -13,26 +13,29 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Write cookies file
+        run: |
+          echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+
+      - name: Install Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          pip install yt-dlp pillow
+      - name: Install yt-dlp
+        run: pip install "yt-dlp[default]"
 
-      - name: Write cookies.txt
-        run: |
-          echo "${{ secrets.YTDLP_COOKIES }}" > cookies.txt
+      - name: Install Pillow
+        run: pip install pillow
 
       - name: Run thumbnail script
         run: python scripts/fetch_thumbnails.py
 
       - name: Commit changes
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
           git add thumbnails
-          git diff --cached --quiet || git commit -m "Update thumbnails"
+          git commit -m "Update thumbnails" || echo "No changes"
           git push
