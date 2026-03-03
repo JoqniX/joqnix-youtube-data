@@ -10,12 +10,14 @@ STREAMS_FILE = "data/streams.json"
 THUMBNAIL_DIR = Path("thumbnails")
 MAX_SIZE = 10 * 1024 * 1024  # 10MB
 
+
 def sha256_file(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
         while chunk := f.read(8192):
             h.update(chunk)
     return h.hexdigest()
+
 
 def download_thumbnail(video_id, output_dir):
     url = f"https://www.youtube.com/watch?v={video_id}"
@@ -25,26 +27,37 @@ def download_thumbnail(video_id, output_dir):
         "writethumbnail": True,
         "outtmpl": str(output_dir / "%(id)s"),
         "quiet": True,
+        "cookiefile": "cookies.txt",
+        "js_runtimes": ["node"],
+        "remote_components": ["ejs:github"],
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android"]
+            }
+        },
     }
 
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-    # find downloaded thumbnail
+    # Find downloaded thumbnail
     for file in output_dir.glob(f"{video_id}.*"):
         if file.suffix.lower() in [".jpg", ".jpeg", ".webp", ".png"]:
             return file
 
     return None
 
+
 def convert_to_jpg(input_path, output_path):
     with Image.open(input_path) as img:
         rgb = img.convert("RGB")
         rgb.save(output_path, format="JPEG", quality=95)
 
+
 def encode_base64(image_path):
     with open(image_path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
+
 
 def extract_video_ids(streams_data):
     video_ids = []
@@ -56,10 +69,12 @@ def extract_video_ids(streams_data):
             elif isinstance(item, dict):
                 if "video_id" in item:
                     video_ids.append(item["video_id"])
+
     elif isinstance(streams_data, dict):
         video_ids.extend(streams_data.keys())
 
     return video_ids
+
 
 def main():
     if not Path(STREAMS_FILE).exists():
@@ -88,6 +103,7 @@ def main():
         base64_path = video_dir / "thumbnail_base64.json"
 
         temp_file = download_thumbnail(video_id, video_dir)
+
         if not temp_file:
             print(f"Failed to download thumbnail for {video_id}")
             continue
@@ -120,6 +136,7 @@ def main():
             }, f)
 
         print(f"Updated thumbnail + base64 for {video_id}")
+
 
 if __name__ == "__main__":
     main()
