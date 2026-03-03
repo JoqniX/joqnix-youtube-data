@@ -6,7 +6,7 @@ on:
     - cron: "0 */12 * * *"
 
 jobs:
-  fetch-thumbnails:
+  fetch:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,21 +17,26 @@ jobs:
         run: |
           echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
 
+      - name: Install FFmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install yt-dlp
-        run: pip install "yt-dlp[default]"
-
-      - name: Install Pillow
-        run: pip install pillow
+      - name: Install yt-dlp with curl-cffi
+        run: pip install "yt-dlp[default,curl-cffi]"
 
       - name: Run thumbnail script
         run: python scripts/fetch_thumbnails.py
 
-      - name: Commit changes
+      - name: Commit thumbnails
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
