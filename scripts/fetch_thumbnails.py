@@ -1,4 +1,3 @@
-import os
 import json
 import hashlib
 import base64
@@ -28,8 +27,13 @@ def download_thumbnail(video_id, output_dir):
         "outtmpl": str(output_dir / "%(id)s"),
         "quiet": True,
         "cookiefile": "cookies.txt",
-        "js_runtimes": ["node"],
-        "remote_components": ["ejs:github"],
+
+        # Correct js_runtimes format (dict, not list)
+        "js_runtimes": {
+            "node": {}
+        },
+
+        # Use Android client to reduce bot detection
         "extractor_args": {
             "youtube": {
                 "player_client": ["android"]
@@ -66,9 +70,8 @@ def extract_video_ids(streams_data):
         for item in streams_data:
             if isinstance(item, str):
                 video_ids.append(item)
-            elif isinstance(item, dict):
-                if "video_id" in item:
-                    video_ids.append(item["video_id"])
+            elif isinstance(item, dict) and "video_id" in item:
+                video_ids.append(item["video_id"])
 
     elif isinstance(streams_data, dict):
         video_ids.extend(streams_data.keys())
@@ -77,11 +80,12 @@ def extract_video_ids(streams_data):
 
 
 def main():
-    if not Path(STREAMS_FILE).exists():
+    streams_path = Path(STREAMS_FILE)
+    if not streams_path.exists():
         print("streams.json not found.")
         return
 
-    with open(STREAMS_FILE, "r", encoding="utf-8") as f:
+    with open(streams_path, "r", encoding="utf-8") as f:
         streams_data = json.load(f)
 
     video_ids = extract_video_ids(streams_data)
