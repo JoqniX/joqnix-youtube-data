@@ -38,7 +38,7 @@ def download_thumbnail(video_id, output_dir):
     cmd = [
         "yt-dlp",
         "--cookies", "cookies.txt",
-        "--js-runtimes","node",
+        "--js-runtimes", "node",
         "--remote-components", "ejs:github",
         "--skip-download",
         "--write-thumbnail",
@@ -47,10 +47,12 @@ def download_thumbnail(video_id, output_dir):
         url
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    # 🚀 STREAM LOGS LIVE IN GITHUB ACTIONS
+    process = subprocess.Popen(cmd)
+    process.wait()
 
-    if result.returncode != 0:
-        print(result.stderr)
+    if process.returncode != 0:
+        print(f"yt-dlp failed for {video_id}")
         return None
 
     for file in output_dir.glob(f"{video_id}.jpg"):
@@ -78,7 +80,7 @@ def main():
     THUMBNAIL_DIR.mkdir(exist_ok=True)
 
     for video_id in video_ids:
-        print(f"Processing {video_id}")
+        print(f"\nProcessing {video_id}")
 
         video_dir = THUMBNAIL_DIR / video_id
         video_dir.mkdir(exist_ok=True)
@@ -86,6 +88,12 @@ def main():
         jpg_path = video_dir / "thumbnail.jpg"
         hash_path = video_dir / "hash.txt"
         base64_path = video_dir / "thumbnail_base64.json"
+
+        # 🚀 SPEED UPGRADE
+        # If everything already exists, skip completely
+        if jpg_path.exists() and hash_path.exists() and base64_path.exists():
+            print(f"{video_id} already processed. Skipping.")
+            continue
 
         temp_file = download_thumbnail(video_id, video_dir)
 
@@ -104,10 +112,11 @@ def main():
 
         new_hash = sha256_file(jpg_path)
 
+        # If hash exists and matches, skip base64 regeneration
         if hash_path.exists():
             old_hash = hash_path.read_text().strip()
-            if old_hash == new_hash:
-                print("Unchanged. Skipping base64.")
+            if old_hash == new_hash and base64_path.exists():
+                print("Thumbnail unchanged. Skipping base64.")
                 continue
 
         hash_path.write_text(new_hash)
