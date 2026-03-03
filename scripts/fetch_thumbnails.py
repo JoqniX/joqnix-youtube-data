@@ -3,7 +3,6 @@ import hashlib
 import base64
 import subprocess
 from pathlib import Path
-from PIL import Image
 
 STREAMS_FILE = "data/streams.json"
 THUMBNAIL_DIR = Path("thumbnails")
@@ -27,7 +26,6 @@ def extract_video_ids(streams_data):
                 video_ids.append(item)
             elif isinstance(item, dict) and "video_id" in item:
                 video_ids.append(item["video_id"])
-
     elif isinstance(streams_data, dict):
         video_ids.extend(streams_data.keys())
 
@@ -40,6 +38,8 @@ def download_thumbnail(video_id, output_dir):
     cmd = [
         "yt-dlp",
         "--cookies", "cookies.txt",
+        "--js-runtimes","node",
+        "--remote-components", "ejs:github",
         "--skip-download",
         "--write-thumbnail",
         "--convert-thumbnails", "jpg",
@@ -50,12 +50,11 @@ def download_thumbnail(video_id, output_dir):
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     if result.returncode != 0:
-        print("yt-dlp error:", result.stderr)
+        print(result.stderr)
         return None
 
-    for file in output_dir.glob(f"{video_id}.*"):
-        if file.suffix.lower() in [".jpg", ".jpeg", ".webp", ".png"]:
-            return file
+    for file in output_dir.glob(f"{video_id}.jpg"):
+        return file
 
     return None
 
@@ -76,10 +75,6 @@ def main():
 
     video_ids = extract_video_ids(streams_data)
 
-    if not video_ids:
-        print("No video IDs found.")
-        return
-
     THUMBNAIL_DIR.mkdir(exist_ok=True)
 
     for video_id in video_ids:
@@ -97,7 +92,6 @@ def main():
         if not temp_file:
             continue
 
-        # Rename properly if needed
         if temp_file.name != "thumbnail.jpg":
             temp_file.rename(jpg_path)
         else:
