@@ -1,0 +1,34 @@
+name: Fetch Thumbnails
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */12 * * *"  # every 12 hours
+
+jobs:
+  fetch-thumbnails:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install yt-dlp pillow
+
+      - name: Run thumbnail script
+        run: python scripts/fetch_thumbnails.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add thumbnails
+          git diff --cached --quiet || git commit -m "Update thumbnails"
+          git push
