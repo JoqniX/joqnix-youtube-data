@@ -2,6 +2,7 @@ import json
 import hashlib
 import base64
 import subprocess
+import requests
 from pathlib import Path
 
 STREAMS_FILE = "data/streams.json"
@@ -55,17 +56,37 @@ def download_thumbnail(video_id, output_dir):
         url
     ]
 
-    # 🚀 STREAM LOGS LIVE
+    print(f"Running yt-dlp for {video_id}")
     process = subprocess.Popen(cmd)
     process.wait()
 
-    if process.returncode != 0:
-        print(f"yt-dlp failed for {video_id}")
-        return None
+    # If yt-dlp succeeded normally
+    if process.returncode == 0:
+        for file in output_dir.glob(f"{video_id}.jpg"):
+            return file
 
-    for file in output_dir.glob(f"{video_id}.jpg"):
-        return file
+    print(f"yt-dlp failed for {video_id}. Trying fallback...")
 
+    # 🔥 Fallback for scheduled streams
+    fallback_urls = [
+        f"https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg",
+        f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg",
+        f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
+    ]
+
+    for thumb_url in fallback_urls:
+        try:
+            response = requests.get(thumb_url, timeout=10)
+            if response.status_code == 200:
+                jpg_path = output_dir / f"{video_id}.jpg"
+                with open(jpg_path, "wb") as f:
+                    f.write(response.content)
+                print(f"Downloaded thumbnail via fallback for {video_id}")
+                return jpg_path
+        except Exception:
+            continue
+
+    print(f"Fallback failed for {video_id}")
     return None
 
 
@@ -77,7 +98,7 @@ def encode_base64(image_path):
 def main():
     all_video_ids = set()
 
-    # 🔹 Load all_streams.json FIRST (primary source)
+    # 🔹 Load all_streams.json (PRIMARY SOURCE)
     all_streams_path = Path(ALL_STREAMS_FILE)
     if all_streams_path.exists():
         with open(all_streams_path, "r", encoding="utf-8") as f:
@@ -89,7 +110,7 @@ def main():
     else:
         print("all_streams.json not found.")
 
-    # 🔹 Load streams.json (secondary source)
+    # 🔹 Load streams.json (SECONDARY SOURCE)
     streams_path = Path(STREAMS_FILE)
     if streams_path.exists():
         with open(streams_path, "r", encoding="utf-8") as f:
@@ -139,6 +160,7 @@ def main():
 
         new_hash = sha256_file(jpg_path)
 
+        # If unchanged, skip base64 regeneration
         if hash_path.exists():
             old_hash = hash_path.read_text().strip()
             if old_hash == new_hash and base64_path.exists():
