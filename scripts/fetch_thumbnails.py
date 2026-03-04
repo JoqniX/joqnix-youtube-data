@@ -5,6 +5,8 @@ import subprocess
 from pathlib import Path
 
 STREAMS_FILE = "data/streams.json"
+ALL_STREAMS_FILE = "data/all_streams.json"
+
 THUMBNAIL_DIR = Path("thumbnails")
 MAX_SIZE = 10 * 1024 * 1024  # 10MB
 
@@ -17,7 +19,7 @@ def sha256_file(path):
     return h.hexdigest()
 
 
-def extract_video_ids(streams_data):
+def extract_video_ids_from_streams(streams_data):
     video_ids = []
 
     if isinstance(streams_data, list):
@@ -30,6 +32,12 @@ def extract_video_ids(streams_data):
         video_ids.extend(streams_data.keys())
 
     return video_ids
+
+
+def extract_video_ids_from_all_streams(all_streams_data):
+    if not isinstance(all_streams_data, dict):
+        return []
+    return all_streams_data.get("all_status_stream_ids", [])
 
 
 def download_thumbnail(video_id, output_dir):
@@ -47,7 +55,7 @@ def download_thumbnail(video_id, output_dir):
         url
     ]
 
-    # 🚀 STREAM LOGS LIVE IN GITHUB ACTIONS
+    # 🚀 STREAM LOGS LIVE
     process = subprocess.Popen(cmd)
     process.wait()
 
@@ -67,19 +75,39 @@ def encode_base64(image_path):
 
 
 def main():
+    all_video_ids = set()
+
+    # 🔹 Load all_streams.json FIRST (primary source)
+    all_streams_path = Path(ALL_STREAMS_FILE)
+    if all_streams_path.exists():
+        with open(all_streams_path, "r", encoding="utf-8") as f:
+            all_streams_data = json.load(f)
+
+        ids = extract_video_ids_from_all_streams(all_streams_data)
+        print(f"Loaded {len(ids)} IDs from all_streams.json")
+        all_video_ids.update(ids)
+    else:
+        print("all_streams.json not found.")
+
+    # 🔹 Load streams.json (secondary source)
     streams_path = Path(STREAMS_FILE)
-    if not streams_path.exists():
+    if streams_path.exists():
+        with open(streams_path, "r", encoding="utf-8") as f:
+            streams_data = json.load(f)
+
+        ids = extract_video_ids_from_streams(streams_data)
+        print(f"Loaded {len(ids)} IDs from streams.json")
+        all_video_ids.update(ids)
+    else:
         print("streams.json not found.")
+
+    if not all_video_ids:
+        print("No video IDs found.")
         return
-
-    with open(streams_path, "r", encoding="utf-8") as f:
-        streams_data = json.load(f)
-
-    video_ids = extract_video_ids(streams_data)
 
     THUMBNAIL_DIR.mkdir(exist_ok=True)
 
-    for video_id in video_ids:
+    for video_id in sorted(all_video_ids):
         print(f"\nProcessing {video_id}")
 
         video_dir = THUMBNAIL_DIR / video_id
@@ -90,7 +118,6 @@ def main():
         base64_path = video_dir / "thumbnail_base64.json"
 
         # 🚀 SPEED UPGRADE
-        # If everything already exists, skip completely
         if jpg_path.exists() and hash_path.exists() and base64_path.exists():
             print(f"{video_id} already processed. Skipping.")
             continue
@@ -112,7 +139,6 @@ def main():
 
         new_hash = sha256_file(jpg_path)
 
-        # If hash exists and matches, skip base64 regeneration
         if hash_path.exists():
             old_hash = hash_path.read_text().strip()
             if old_hash == new_hash and base64_path.exists():
