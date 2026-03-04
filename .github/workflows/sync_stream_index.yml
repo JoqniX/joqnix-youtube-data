@@ -1,0 +1,47 @@
+name: Sync Stream Index From Worker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"  # every 10 minutes (adjust if needed)
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Fetch stream index from Cloudflare Worker
+        run: |
+          curl -s https://joqnix-stream-api.onaixia.workers.dev/api/all > temp.json
+
+      - name: Validate response
+        run: |
+          cat temp.json
+          jq empty temp.json
+
+      - name: Extract all_status_stream_ids
+        run: |
+          jq '.all_status_stream_ids' temp.json > data/all_streams.json
+
+      - name: Add timestamp wrapper (optional but nice)
+        run: |
+          jq -n \
+            --argjson ids "$(cat data/all_streams.json)" \
+            --arg updated "$(date +%s)" \
+            '{updated_at: ($updated | tonumber), all_status_stream_ids: $ids}' \
+            > data/all_streams_wrapped.json
+          mv data/all_streams_wrapped.json data/all_streams.json
+
+      - name: Commit updated stream index
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add data/all_streams.json
+          git commit -m "Sync stream index from Worker" || echo "No changes"
+          git push
