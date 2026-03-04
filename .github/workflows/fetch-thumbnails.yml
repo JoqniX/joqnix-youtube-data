@@ -29,10 +29,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
+          
       - name: Install yt-dlp with curl-cffi
-        run: pip install "yt-dlp[default,curl-cffi]"
-
+        run: pip install "yt-dlp[default,curl-cffi]" requests
+        
       - name: Run thumbnail script
         run: python scripts/fetch_thumbnails.py
 
