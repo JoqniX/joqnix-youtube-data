@@ -64,4 +64,6 @@ jobs:
           git add timeline_chunks
 
           git commit -m "Update archive data" || echo "No changes"
-          git push
+
+          git pull --rebase origin Main-dayo
+          git push origin Main-dayo
