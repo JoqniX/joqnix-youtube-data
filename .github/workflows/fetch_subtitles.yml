@@ -13,18 +13,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Write cookies file
-        run: |
-          echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
-
-
       - name: Install FFmpeg
-        run: sudo apt-get install -y ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -35,14 +30,83 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install yt-dlp
-        run: pip install -U "yt-dlp[default,curl-cffi]"
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade "yt-dlp[default,curl-cffi]"
+
+      - name: Fetch YouTube cookies from Cloudflare
+        env:
+          COOKIE_SYNC_TOKEN: ${{ secrets.COOKIE_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          COOKIE_API="https://api.joqnix.space/cookies/youtube.com"
+
+          echo "Fetching YouTube cookie snapshot from Cloudflare..."
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 3 \
+            --retry-delay 2 \
+            -H "Authorization: Bearer ${COOKIE_SYNC_TOKEN}" \
+            -H "Accept: application/json" \
+            "${COOKIE_API}" \
+            -o cookie-response.json
+
+          echo "Validating Cloudflare response..."
+
+          jq -e '
+            .success == true and
+            (.netscape | type == "string") and
+            (.netscape | length > 0)
+          ' cookie-response.json > /dev/null
+
+          echo "Writing Netscape cookie file..."
+
+          umask 077
+          jq -r '.netscape' cookie-response.json > cookies.txt
+
+          echo "Cookie file created."
+
+          echo "Cookie file size:"
+          wc -c cookies.txt
+
+          echo "Cookie count:"
+          grep -vE '^(#|$)' cookies.txt | wc -l
+
+          echo "Removing API response..."
+          rm -f cookie-response.json
+
+      - name: Debug yt-dlp environment
+        run: |
+          echo "Node:"
+          node --version
+
+          echo "Python:"
+          python --version
+
+          echo "yt-dlp:"
+          yt-dlp --version
+
+          echo "yt-dlp JS runtime information:"
+          yt-dlp --verbose \
+            --js-runtimes node \
+            --simulate \
+            --cookies cookies.txt \
+            "https://www.youtube.com/watch?v=$(jq -r '.[0]' data/streams.json)" \
+            2>&1 | grep -E \
+              'JS runtimes|JS Challenge|EJS|yt-dlp-ejs|youtube|Extracting URL' \
+              || true
 
       - name: Debug subtitle availability
         run: |
           yt-dlp \
+            --js-runtimes node \
             --cookies cookies.txt \
             --list-subs \
-            https://www.youtube.com/watch?v=$(jq -r '.[0]' data/streams.json)
+            "https://www.youtube.com/watch?v=$(jq -r '.[0]' data/streams.json)"
 
       - name: Create subtitles folder
         run: mkdir -p subtitles
@@ -52,6 +116,12 @@ jobs:
 
       - name: Run subtitle script
         run: bash scripts/fetch_subtitles.sh
+
+      - name: Remove temporary cookie file
+        if: always()
+        run: |
+          rm -f cookies.txt
+          rm -f cookie-response.json
 
       - name: Commit generated data
         run: |
