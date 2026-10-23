@@ -13,9 +13,24 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Write cookies file
+      - name: Fetch YouTube cookies from Cloudflare
+        env:
+          COOKIE_SYNC_TOKEN: ${{ secrets.COOKIE_SYNC_TOKEN }}
         run: |
-          echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+          set -euo pipefail
+
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 \
+            -H "Authorization: Bearer ${COOKIE_SYNC_TOKEN}" \
+            -H "Accept: application/json" \
+            "https://api.joqnix.space/cookies/youtube.com" \
+            -o cookie-response.json
+
+          jq -e '.success == true and (.netscape | type == "string") and (.netscape | length > 0)' \
+            cookie-response.json > /dev/null
+
+          umask 077
+          jq -r '.netscape' cookie-response.json > cookies.txt
+          rm -f cookie-response.json
 
       - name: Install FFmpeg
         run: sudo apt-get install -y ffmpeg
@@ -41,6 +56,9 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
+          rm -f cookies.txt
+
           git add thumbnails
           git commit -m "Update thumbnails" || echo "No changes"
-          git push
+          git pull --rebase origin Main-dayo
+          git push origin Main-dayo

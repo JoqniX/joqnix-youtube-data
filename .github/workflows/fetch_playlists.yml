@@ -28,4 +28,5 @@ jobs:
           git config --global user.email "actions@github.com"
           git add data/playlist_map.json
           git commit -m "Update playlist map" || echo "No changes"
-          git push
+          git pull --rebase origin Main-dayo
+          git push origin Main-dayo

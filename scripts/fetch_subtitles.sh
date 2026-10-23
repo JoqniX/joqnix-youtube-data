@@ -25,6 +25,10 @@ with open("data/streams.json") as f:
 limit = 10
 processed = 0
 
+# A video that keeps failing (no subs, chat disabled, private...) is retried
+# at most this many times so it cannot eat the per-run limit forever.
+MAX_ATTEMPTS = 3
+
 
 # ---------- TIMESTAMP ----------
 def seconds_to_timestamp(sec):
@@ -244,18 +248,41 @@ def build_timeline_chunks(video_id,lang,events):
 
 
 # ---------- MAIN LOOP ----------
+def read_attempts(path):
+
+    try:
+        with open(path) as f:
+            return int(f.read().strip() or 0)
+    except (OSError, ValueError):
+        return 0
+
+
 for vid in streams:
 
     if processed>=limit:
         break
 
-    print("Processing:",vid)
-
     sub_folder=f"subtitles/{vid}"
     chat_folder=f"livechat/{vid}"
 
+    attempts_file=f"{sub_folder}/.attempts"
+
+    # Only videos that still need work count toward the limit, otherwise
+    # the same first N already-archived streams are picked on every run
+    # and the backlog never gets processed.
+    already_done=os.path.exists(f"{sub_folder}/{vid}.en.srt")
+    attempts=read_attempts(attempts_file)
+
+    if already_done or attempts>=MAX_ATTEMPTS:
+        continue
+
+    print("Processing:",vid)
+
     os.makedirs(sub_folder,exist_ok=True)
     os.makedirs(chat_folder,exist_ok=True)
+
+    with open(attempts_file,"w") as f:
+        f.write(str(attempts+1))
 
     url=f"https://www.youtube.com/watch?v={vid}"
 
