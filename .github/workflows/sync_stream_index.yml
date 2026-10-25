@@ -27,7 +27,11 @@ jobs:
 
       - name: Extract all_status_stream_ids
         run: |
-          jq '.all_status_stream_ids' temp.json > data/all_streams.json
+          # /api/all returns a map of video_id -> stream data; older versions
+          # returned an object with an all_status_stream_ids list.
+          jq 'if has("all_status_stream_ids") then .all_status_stream_ids else keys end' temp.json > data/all_streams.json
+          # Don't overwrite the index with null/empty.
+          jq -e 'type == "array" and length > 0' data/all_streams.json
 
       - name: Add timestamp wrapper (optional but nice)
         run: |

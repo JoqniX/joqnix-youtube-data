@@ -38,7 +38,8 @@ def extract_video_ids_from_streams(streams_data):
 def extract_video_ids_from_all_streams(all_streams_data):
     if not isinstance(all_streams_data, dict):
         return []
-    return all_streams_data.get("all_status_stream_ids", [])
+    # The key can exist with a null value, so don't rely on the .get default.
+    return all_streams_data.get("all_status_stream_ids") or []
 
 
 def download_thumbnail(video_id, output_dir):
