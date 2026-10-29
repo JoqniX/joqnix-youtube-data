@@ -3,6 +3,7 @@ import hashlib
 import base64
 import subprocess
 import requests
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 STREAMS_FILE = "data/streams.json"
@@ -40,6 +41,33 @@ def extract_video_ids_from_all_streams(all_streams_data):
         return []
     # The key can exist with a null value, so don't rely on the .get default.
     return all_streams_data.get("all_status_stream_ids") or []
+
+
+SCHEDULE_API = "https://api.joqnix.space/schedules/streams"
+ACTIVE_FLAGS = {"SCHEDULED", "AWAITING", "DELAYED", "POSTPONED", "LIVE"}
+
+
+def fetch_active_stream_ids():
+    """Ids of streams that are upcoming or live, from the schedules API."""
+    today = datetime.now(timezone.utc).date()
+    params = {
+        "from": (today - timedelta(days=1)).isoformat(),
+        "to": (today + timedelta(days=30)).isoformat(),
+    }
+
+    try:
+        response = requests.get(SCHEDULE_API, params=params, timeout=20)
+        response.raise_for_status()
+        streams = response.json().get("streams", [])
+    except Exception as error:
+        print(f"Could not load the schedule, nothing will be refreshed: {error}")
+        return set()
+
+    return {
+        item["videoId"]
+        for item in streams
+        if item.get("statusFlag") in ACTIVE_FLAGS and item.get("videoId")
+    }
 
 
 def download_thumbnail(video_id, output_dir):
@@ -127,6 +155,12 @@ def main():
         print("No video IDs found.")
         return
 
+    # Thumbnails can be changed after scheduling or mid-stream, so streams
+    # that have not ended are re-downloaded every run; the hash check below
+    # skips unchanged ones.
+    active_ids = fetch_active_stream_ids()
+    print(f"{len(active_ids)} upcoming / live streams will be refreshed")
+
     THUMBNAIL_DIR.mkdir(exist_ok=True)
 
     for video_id in sorted(all_video_ids):
@@ -139,8 +173,13 @@ def main():
         hash_path = video_dir / "hash.txt"
         base64_path = video_dir / "thumbnail_base64.json"
 
-        # 🚀 SPEED UPGRADE
-        if jpg_path.exists() and hash_path.exists() and base64_path.exists():
+        # 🚀 SPEED UPGRADE: finished streams are only fetched once
+        if (
+            video_id not in active_ids
+            and jpg_path.exists()
+            and hash_path.exists()
+            and base64_path.exists()
+        ):
             print(f"{video_id} already processed. Skipping.")
             continue
 
