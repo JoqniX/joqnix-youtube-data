@@ -1,0 +1,1 @@
+[{"type": "subtitle", "time": 9025.99, "timestamp": "02:30:25", "text": "情況。讓我們把它修復好。這樣你的頁腳就會像這段程式碼一樣渲染成多行。當 Sammy 或任何"}, {"type": "subtitle", "time": 9028.15, "timestamp": "02:30:28", "text": "JSON 序列化器序列化你的物件時，換行符號會轉義，而不是顯示為文字。字元是 H。這是有效的 JSON，但 Disco M 實際上位於後端技術中，而不是一個庫。它顯示「"}, {"type": "subtitle", "time": 9042.07, "timestamp": "02:30:42", "text": "好的，完全不要"}]

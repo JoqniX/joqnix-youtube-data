@@ -1,0 +1,1 @@
+[{"type": "subtitle", "time": 5171.91, "timestamp": "01:26:11", "text": "Oh my god」。  我的天啊。  不要使用字串變量，而是建立物件 A，然後添加物件屬性 A。這樣，"}, {"type": "subtitle", "time": 5190.55, "timestamp": "01:26:30", "text": "字段"}, {"type": "subtitle", "time": 5194.55, "timestamp": "01:26:34", "text": "輸入就變成了一個真正的對象，而不是一個文字字串。"}]
