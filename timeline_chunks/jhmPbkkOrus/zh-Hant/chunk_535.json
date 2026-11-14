@@ -1,0 +1,1 @@
+[{"type": "subtitle", "time": 32132.868, "timestamp": "08:55:32", "text": "對吧？有一個應用程式內翻譯器，可以自動翻譯評論之類的中文內容，非常方便。 所以我提交了一個功能"}, {"type": "subtitle", "time": 32149.91, "timestamp": "08:55:49", "text": "請求，希望他們能提供一種方法，將聊天內容導入 WebSocket，這樣我就可以通過 Sammy 控制它，並將其發送到 Discord。"}]
